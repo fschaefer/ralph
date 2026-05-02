@@ -9,7 +9,7 @@ Inspired by [wiggum-cli](https://github.com/federiconeri/wiggum-cli).
 ## Installation
 
 ```bash
-git clone https://github.com/youruser/ralph
+git clone https://github.com/fschaefer/ralph
 cd ralph
 chmod +x ralph.sh
 ```
@@ -148,11 +148,11 @@ ACTION_REQUIRED: Which database should I use – SQLite or PostgreSQL?
 **User side** – ralph pauses and prompts:
 
 ```
-📬 Action Inbox – Agent wartet auf Eingabe:
+📬 Action Inbox – agent is waiting for input:
    Which database should I use – SQLite or PostgreSQL?
 
-Deine Antwort: SQLite please
-✅ Antwort gespeichert in .ralph/inbox-response.txt
+Your reply: SQLite please
+✅ Reply saved to .ralph/inbox-response.txt
 ```
 
 On the next iteration the agent reads `.ralph/inbox-response.txt` and continues.
@@ -218,7 +218,7 @@ Or set the `STOP_REGEX` environment variable.
 After each iteration ralph prints `git diff --stat HEAD` (when inside a Git repo) so you can see exactly what the agent changed:
 
 ```
-📊 Änderungen seit letztem Commit (git diff --stat HEAD):
+📊 Changes since last commit (git diff --stat HEAD):
  src/api.js | 42 ++++++++++++++++++++++++--
  1 file changed, 40 insertions(+), 2 deletions(-)
 ```
@@ -278,6 +278,8 @@ See the [`examples/`](examples/) directory:
 - [`with-prompt.sh`](examples/with-prompt.sh) – Using `--goal` and `--stack` for auto-generated prompts
 - [`with-worktree.sh`](examples/with-worktree.sh) – Isolated Git worktree run
 - [`with-action-inbox.sh`](examples/with-action-inbox.sh) – Interactive Action Inbox pause-and-approve
+- [`with-spec.sh`](examples/with-spec.sh) – Loading a named spec from `.ralph/specs/`
+- [`quiet.sh`](examples/quiet.sh) – Running without banners (quiet mode)
 - [`monitor.sh`](examples/monitor.sh) – Live log monitoring in a second terminal
 
 ---

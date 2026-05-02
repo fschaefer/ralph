@@ -42,9 +42,9 @@
 - [x] Update README
 
 ### 7. Documentation & Examples
-- [ ] Translate all to english
-- [ ] Update README to cover all new features with examples
-- [ ] Ensure all examples are consistent with new features
-- [ ] Cleanup folder
-- [ ] Use github.com/fschaefer/ralph
+- [x] Translate all to english
+- [x] Update README to cover all new features with examples
+- [x] Ensure all examples are consistent with new features
+- [x] Cleanup folder
+- [x] Use github.com/fschaefer/ralph
 - [ ] add to prompt that .ralph directory should be excluded in .gitignore if git is used

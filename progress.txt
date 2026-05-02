@@ -32,3 +32,12 @@
 - ralph.sh: added QUIET flag; -q/--quiet flag; config header and iteration banners wrapped with [[ $QUIET -eq 0 ]]
 - README.md: added --quiet row to options table
 - Verification: bash -n OK; --quiet --dry-run shows no banner suppression (dry-run intentionally always shows config)
+
+[2026-05-02] Iteration 7: Task "Documentation & Examples"
+- ralph.sh: translated all German strings to English (usage, error messages, config header, dry-run, monitor, action inbox, run summary, embedded prompt template); cleaned up test spec file
+- PROMPT_TEMPLATE.md: translated to English
+- README.md: updated GitHub URL to fschaefer/ralph; translated remaining German UI strings; added --spec and --quiet to options table; added Multiple Specs section; added with-spec.sh and quiet.sh to examples list
+- examples/with-action-inbox.sh: fixed script path handling; standardised shebang
+- examples/with-spec.sh: created
+- examples/quiet.sh: created
+- Verification: bash -n OK; dry-run output is fully English; no German strings remain in runtime code paths

@@ -1,65 +1,65 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Minimaler Ralph-Loop-Runner
+# Minimal Ralph loop runner
 #
 # Usage:
 #   ./ralph.sh [iterations] -- <agent-command...>
 #
-# Beispiel:
-#   ./ralph.sh 3 -- pi -p "Schreib einfach nur OK"
+# Example:
+#   ./ralph.sh 3 -- claude -p "Just output OK"
 
 usage() {
   cat <<'EOF'
 Usage:
   ./ralph.sh [options] [iterations] -- <agent-command...>
 
-Optionen:
-  --delay <s>              Pause zwischen Iterationen in Sekunden (Standard: 2, oder RALPH_DELAY)
-  --max-iterations <n>     Maximale Anzahl Iterationen (Alias für Positionsargument)
-  --timeout <s>            Pro-Iteration-Timeout in Sekunden; Agent wird nach <s>s abgebrochen (0 = deaktiviert)
-  --stop-regex <pattern>   Regex zum Erkennen des Stopp-Signals (Standard: STOP_REGEX oder ^COMPLETE:...)
-  --action-inbox           Pausiere den Loop wenn der Agent "ACTION_REQUIRED: <msg>" ausgibt;
-                           warte auf Benutzer-Eingabe und schreibe sie nach .ralph/inbox-response.txt
-  --inbox-timeout <s>      Timeout für die Benutzer-Eingabe in Sekunden (0 = unbegrenzt, Standard: 0)
-  --monitor                Zeige den Live-Log des laufenden Runs (tail -f .ralph/ralph.log)
-  --quiet, -q              Unterdrücke Konfigurations-Header und Iterations-Banner
-  --dry-run                Konfiguration ausgeben, ohne den Befehl auszuführen; exit 0
-  --resume                 Bei der zuletzt gespeicherten Iteration weitermachen (.ralph/iteration.txt)
-  --worktree               Isolierten Git Worktree für diesen Run erstellen (Branch: ralph/run-<ts>)
-  --goal <text>            Projektziel (befüllt {{GOAL}} im Prompt-Template → .ralph/PROMPT.md)
-  --stack <text>           Technologie-Stack (befüllt {{STACK}} im Prompt-Template → .ralph/PROMPT.md)
-  --prompt-file <path>     Fertigen Prompt direkt übergeben (überschreibt --goal/--stack)
-  --spec <name>            Lädt .ralph/specs/<name>.md als Prompt;
-                           verwende {SPEC_FILE} im Agent-Kommando als Platzhalter
-  -v, --version            Versionsnummer ausgeben und beenden
+Options:
+  --delay <s>              Pause between iterations in seconds (default: 2, or $RALPH_DELAY)
+  --max-iterations <n>     Maximum number of iterations (alias for positional argument)
+  --timeout <s>            Per-iteration timeout in seconds; kills agent after <s>s (0 = disabled)
+  --stop-regex <pattern>   Regex that triggers a successful stop (default: $STOP_REGEX or ^COMPLETE:...)
+  --action-inbox           Pause loop when agent outputs "ACTION_REQUIRED: <msg>";
+                           wait for user input and write it to .ralph/inbox-response.txt
+  --inbox-timeout <s>      Timeout for user input in seconds (0 = unlimited, default: 0)
+  --monitor                Tail .ralph/ralph.log in real-time (open in a second terminal)
+  --quiet, -q              Suppress config header and iteration banners
+  --dry-run                Print configuration and exit without running the agent
+  --resume                 Resume from last saved iteration (.ralph/iteration.txt)
+  --worktree               Create an isolated Git worktree for this run (branch: ralph/run-<ts>)
+  --goal <text>            Project goal (fills {{GOAL}} in prompt template → .ralph/PROMPT.md)
+  --stack <text>           Tech stack (fills {{STACK}} in prompt template → .ralph/PROMPT.md)
+  --prompt-file <path>     Use a ready-made prompt file directly (overrides --goal/--stack)
+  --spec <name>            Load .ralph/specs/<name>.md as prompt;
+                           use {SPEC_FILE} in the agent command as a placeholder
+  -v, --version            Print version number and exit
 
-Prompt-Integration:
-  Mit --goal und --stack wird das Prompt-Template befüllt und als .ralph/PROMPT.md gespeichert.
-  Das Template ist im Skript eingebettet; eine externe PROMPT_TEMPLATE.md im Projektverzeichnis
-  überschreibt das eingebettete Template.
-  Im Agent-Kommando kann {PROMPT_FILE} als Platzhalter für den Pfad verwendet werden:
+Prompt integration:
+  With --goal and --stack the prompt template is filled and saved as .ralph/PROMPT.md.
+  The template is embedded in the script; an external PROMPT_TEMPLATE.md in the project
+  directory takes priority over the built-in one.
+  Use {PROMPT_FILE} anywhere in your agent command as a placeholder for the path:
     ./ralph.sh --goal "Build a REST API" --stack "Node.js" 5 -- claude -p @{PROMPT_FILE}
 
-Beispiel:
-  ./ralph.sh 3 -- pi -p "Schreib einfach nur OK"
-  ./ralph.sh --max-iterations 3 -- pi -p "Schreib einfach nur OK"
-  ./ralph.sh --delay 5 3 -- pi -p "Schreib einfach nur OK"
-  ./ralph.sh --stop-regex '^DONE$' 3 -- pi -p "Schreib einfach nur OK"
-  ./ralph.sh --dry-run 3 -- pi -p "Schreib einfach nur OK"
-  ./ralph.sh --resume 3 -- pi -p "Schreib einfach nur OK"
+Examples:
+  ./ralph.sh 3 -- claude -p "Just output OK"
+  ./ralph.sh --max-iterations 3 -- claude -p "Just output OK"
+  ./ralph.sh --delay 5 3 -- claude -p "Just output OK"
+  ./ralph.sh --stop-regex '^DONE$' 3 -- claude -p "Just output OK"
+  ./ralph.sh --dry-run 3 -- claude -p "Just output OK"
+  ./ralph.sh --resume 3 -- claude -p @.ralph/PROMPT.md
   ./ralph.sh --worktree 5 -- claude -p @{PROMPT_FILE}
-  ./ralph.sh --goal "Baue eine REST API" --stack "Node.js, Express" 5 -- claude -p @{PROMPT_FILE}
+  ./ralph.sh --goal "Build a REST API" --stack "Node.js, Express" 5 -- claude -p @{PROMPT_FILE}
   ./ralph.sh --timeout 120 5 -- claude -p @{PROMPT_FILE}
   ./ralph.sh --action-inbox 5 -- claude -p @{PROMPT_FILE}
   ./ralph.sh --action-inbox --inbox-timeout 120 5 -- claude -p @{PROMPT_FILE}
   ./ralph.sh --spec myfeature 5 -- claude -p @{SPEC_FILE}
   ./ralph.sh --monitor        # in a second terminal while a run is active
 
-Hinweis:
-  Standardmäßig stoppt der Loop bei einer Zeile wie:
+Note:
+  By default the loop stops when the agent output contains a line matching:
     COMPLETE: true
-  Regex anpassbar über --stop-regex oder STOP_REGEX.
+  Customise via --stop-regex or the STOP_REGEX environment variable.
 EOF
 }
 
@@ -96,28 +96,28 @@ while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
       QUIET=1; shift
       ;;
     --delay)
-      [[ -z "${2:-}" ]] && { echo "Fehler: --delay benötigt einen Wert."; exit 1; }
+      [[ -z "${2:-}" ]] && { echo "Error: --delay requires a value."; exit 1; }
       DELAY="$2"; shift 2
       ;;
     --delay=*)
       DELAY="${1#*=}"; shift
       ;;
     --max-iterations)
-      [[ -z "${2:-}" ]] && { echo "Fehler: --max-iterations benötigt einen Wert."; exit 1; }
+      [[ -z "${2:-}" ]] && { echo "Error: --max-iterations requires a value."; exit 1; }
       ITERATIONS="$2"; shift 2
       ;;
     --max-iterations=*)
       ITERATIONS="${1#*=}"; shift
       ;;
     --timeout)
-      [[ -z "${2:-}" ]] && { echo "Fehler: --timeout benötigt einen Wert."; exit 1; }
+      [[ -z "${2:-}" ]] && { echo "Error: --timeout requires a value."; exit 1; }
       TIMEOUT="$2"; shift 2
       ;;
     --timeout=*)
       TIMEOUT="${1#*=}"; shift
       ;;
     --stop-regex)
-      [[ -z "${2:-}" ]] && { echo "Fehler: --stop-regex benötigt einen Wert."; exit 1; }
+      [[ -z "${2:-}" ]] && { echo "Error: --stop-regex requires a value."; exit 1; }
       STOP_REGEX_ARG="$2"; shift 2
       ;;
     --stop-regex=*)
@@ -136,35 +136,35 @@ while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
       ACTION_INBOX=1; shift
       ;;
     --inbox-timeout)
-      [[ -z "${2:-}" ]] && { echo "Fehler: --inbox-timeout benötigt einen Wert."; exit 1; }
+      [[ -z "${2:-}" ]] && { echo "Error: --inbox-timeout requires a value."; exit 1; }
       INBOX_TIMEOUT="$2"; shift 2
       ;;
     --inbox-timeout=*)
       INBOX_TIMEOUT="${1#*=}"; shift
       ;;
     --goal)
-      [[ -z "${2:-}" ]] && { echo "Fehler: --goal benötigt einen Wert."; exit 1; }
+      [[ -z "${2:-}" ]] && { echo "Error: --goal requires a value."; exit 1; }
       GOAL="$2"; shift 2
       ;;
     --goal=*)
       GOAL="${1#*=}"; shift
       ;;
     --stack)
-      [[ -z "${2:-}" ]] && { echo "Fehler: --stack benötigt einen Wert."; exit 1; }
+      [[ -z "${2:-}" ]] && { echo "Error: --stack requires a value."; exit 1; }
       STACK="$2"; shift 2
       ;;
     --stack=*)
       STACK="${1#*=}"; shift
       ;;
     --prompt-file)
-      [[ -z "${2:-}" ]] && { echo "Fehler: --prompt-file benötigt einen Wert."; exit 1; }
+      [[ -z "${2:-}" ]] && { echo "Error: --prompt-file requires a value."; exit 1; }
       PROMPT_FILE_OVERRIDE="$2"; shift 2
       ;;
     --prompt-file=*)
       PROMPT_FILE_OVERRIDE="${1#*=}"; shift
       ;;
     --spec)
-      [[ -z "${2:-}" ]] && { echo "Fehler: --spec benötigt einen Wert."; exit 1; }
+      [[ -z "${2:-}" ]] && { echo "Error: --spec requires a value."; exit 1; }
       SPEC_NAME="$2"; shift 2
       ;;
     --spec=*)
@@ -182,8 +182,8 @@ if [[ $MONITOR -eq 1 ]]; then
   LOG_FILE="$RALPH_DIR/ralph.log"
   ITERATION_FILE="$RALPH_DIR/iteration.txt"
   if [[ ! -f "$LOG_FILE" ]]; then
-    echo "Fehler: Keine Log-Datei gefunden: $LOG_FILE"
-    echo "Starte zuerst einen Ralph-Run, bevor du --monitor verwendest."
+    echo "Error: No log file found: $LOG_FILE"
+    echo "Start a ralph run first before using --monitor."
     exit 1
   fi
   CURRENT_ITER="?"
@@ -191,45 +191,45 @@ if [[ $MONITOR -eq 1 ]]; then
     CURRENT_ITER="$(< "$ITERATION_FILE")"
   fi
   echo "============================================================"
-  echo "📡 Ralph Monitor – Live-Log"
-  printf '  %-18s %s\n' "Log-Datei:" "$LOG_FILE"
-  printf '  %-18s %s\n' "Aktuelle Iteration:" "$CURRENT_ITER"
+  echo "📡 Ralph Monitor – Live Log"
+  printf '  %-18s %s\n' "Log file:" "$LOG_FILE"
+  printf '  %-18s %s\n' "Current iteration:" "$CURRENT_ITER"
   echo "============================================================"
-  echo "(Drücke Ctrl+C zum Beenden)"
+  echo "(Press Ctrl+C to stop)"
   echo ""
   tail -n 50 -f "$LOG_FILE"
   exit 0
 fi
 
 if [[ "${1:-}" != "--" ]]; then
-  echo "Fehler: '--' als Trenner fehlt."
+  echo "Error: '--' separator is missing."
   usage
   exit 1
 fi
 shift
 
 if ! [[ "$ITERATIONS" =~ ^[0-9]+$ ]]; then
-  echo "Fehler: iterations muss eine Zahl sein."
+  echo "Error: iterations must be a number."
   exit 1
 fi
 
 if ! [[ "$DELAY" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
-  echo "Fehler: delay muss eine Zahl sein."
+  echo "Error: delay must be a number."
   exit 1
 fi
 
 if ! [[ "$TIMEOUT" =~ ^[0-9]+$ ]]; then
-  echo "Fehler: timeout muss eine nicht-negative ganze Zahl sein."
+  echo "Error: timeout must be a non-negative integer."
   exit 1
 fi
 
 if ! [[ "$INBOX_TIMEOUT" =~ ^[0-9]+$ ]]; then
-  echo "Fehler: inbox-timeout muss eine nicht-negative ganze Zahl sein."
+  echo "Error: inbox-timeout must be a non-negative integer."
   exit 1
 fi
 
 if [[ $# -lt 1 ]]; then
-  echo "Fehler: Agent-Kommando fehlt."
+  echo "Error: agent command is missing."
   usage
   exit 1
 fi
@@ -240,58 +240,58 @@ STOP_REGEX="${STOP_REGEX_ARG:-${STOP_REGEX:-^COMPLETE:[[:space:]]*true$}}"
 # Embedded default prompt template (used when no PROMPT_TEMPLATE.md is present on disk)
 read -r -d '' EMBEDDED_PROMPT_TEMPLATE <<'EMBEDDED_EOF' || true
 SYSTEM DIRECTIVE: AUTONOMOUS RALPH LOOP AGENT
-Du bist ein autonomer Software-Engineering-Agent, der durch eine externe Bash-Schleife gesteuert wird. Du hast kein Gedächtnis zwischen den Iterationen. Dein gesamtes Wissen über das Projekt befindet sich ausschließlich im Dateisystem.
+You are an autonomous software engineering agent driven by an external Bash loop. You have no memory between iterations. Your entire knowledge of the project lives exclusively in the filesystem.
 
-1. PROJEKTZIEL & SPEZIFIKATION
+1. PROJECT GOAL & SPECIFICATION
 
-- Du baust folgendes Projekt:
+- You are building the following project:
 {{GOAL}}
 
-- Technologie-Stack & Architektur-Regeln:
+- Tech stack & architecture rules:
 {{STACK}}
 
-2. STRIKTER WORKFLOW (IMMER BEFOLGEN!)
-Befolge diese Schritte exakt in der angegebenen Reihenfolge. Überspringe keinen Schritt.
+2. STRICT WORKFLOW (ALWAYS FOLLOW IN ORDER!)
+Follow these steps exactly in the order given. Do not skip any step.
 
-SCHRITT 1: Orientierung (State Recovery)
+STEP 1: Orientation (State Recovery)
 
-Lese tasks.md (die Todo-Liste) und progress.txt (das Log deiner Vorgänger).
+Read tasks.md (the to-do list) and progress.txt (the log left by previous iterations).
 
-Falls diese Dateien nicht existieren: Dies ist Iteration 1. Erstelle die grundlegende Projektstruktur. Erstelle eine tasks.md mit einer sehr granularen Checkliste basierend auf dem Projektziel. Erstelle eine leere progress.txt.
+If these files do not exist: this is iteration 1. Create the basic project structure. Create tasks.md with a very granular checklist based on the project goal. Create an empty progress.txt.
 
-SCHRITT 2: Task-Auswahl
+STEP 2: Task selection
 
-Identifiziere in der tasks.md den nächsten, einzelnen, logisch isolierten Task, der noch nicht erledigt ist.
+Identify the next single, logically isolated task in tasks.md that is not yet done.
 
-Mache niemals mehrere komplexe Dinge gleichzeitig.
+Never tackle multiple complex things at once.
 
-SCHRITT 3: Implementierung
+STEP 3: Implementation
 
-Implementiere den ausgewählten Task. Schreibe oder refactore den entsprechenden Code.
+Implement the selected task. Write or refactor the relevant code.
 
-SCHRITT 4: Backpressure & Verifikation (EXTREM WICHTIG)
-Du darfst niemals davon ausgehen, dass dein Code funktioniert. Du musst zwingend externe Validierung nutzen.
+STEP 4: Backpressure & Verification (EXTREMELY IMPORTANT)
+Never assume your code works. You must use external validation.
 
-Analysiere selbstständig die Projektstruktur (lese z. B. Dateien wie package.json, Makefile, Cargo.toml oder erkunde die Ordnerstruktur), um herauszufinden, welche Linter-, Type-Check- und Test-Befehle in diesem spezifischen Projekt verwendet werden.
+Analyse the project structure autonomously (e.g. read files like package.json, Makefile, Cargo.toml or explore the directory tree) to find out which linter, type-check, and test commands this specific project uses.
 
-Führe die so identifizierten Prüf-Befehle (z. B. npm test, tsc --noEmit, pytest) über dein Terminal-Tool aus.
-Schlägt ein Test oder Linter fehl? Analysiere den Fehler und korrigiere den Code. Wenn du in einer Sackgasse steckst, dokumentiere es in Schritt 5 und beende dich für die nächste Iteration.
+Run the identified check commands (e.g. npm test, tsc --noEmit, pytest) via your terminal tool.
+If a test or linter fails, analyse the error and fix the code. If you are stuck, document it in step 5 and terminate for the next iteration.
 
-SCHRITT 5: Gedächtnis aktualisieren (Memory Injection)
+STEP 5: Update memory (Memory Injection)
 
-Hänge an progress.txt einen kurzen Eintrag an: Welcher Task wurde bearbeitet? Welche Dateien wurden geändert? Gab es ungelöste Fehler? (Fasse dich kurz!).
+Append a short entry to progress.txt: which task was worked on, which files were changed, any unresolved errors. (Be brief!)
 
-Markiere den Task in der tasks.md nur dann als erledigt (z.B. [x]), wenn der Code geschrieben und durch die Befehle aus Schritt 4 erfolgreich und fehlerfrei verifiziert wurde.
+Mark the task in tasks.md as done (e.g. [x]) only when the code has been written and successfully verified by the commands in step 4 with no errors.
 
-SCHRITT 6: Git Commit
+STEP 6: Git commit
 
-Führe über das Terminal aus: git add . gefolgt von git commit -m "ralph: task update"
+Run via terminal: git add . followed by git commit -m "ralph: task update"
 
-SCHRITT 7: Terminierung
+STEP 7: Termination
 
-Szenario A (Es gibt noch offene Tasks oder Fehler): Beende deine Ausgabe mit einer kurzen Zusammenfassung. Der externe Loop wird dich für den nächsten Task neu starten.
+Scenario A (there are still open tasks or errors): End your output with a short summary. The external loop will restart you for the next task.
 
-Szenario B (ALLE Tasks sind erledigt UND verifiziert): Nur wenn absolut alle Anforderungen aus der tasks.md abgearbeitet sind und alle externen Checks fehlerfrei durchlaufen, gibst du exakt und als alleinstehende Zeile folgenden String aus:
+Scenario B (ALL tasks are done AND verified): Only when absolutely all requirements from tasks.md have been completed and all external checks pass without errors, output exactly the following string as a standalone line:
 
 COMPLETE: true
 EMBEDDED_EOF
@@ -306,7 +306,7 @@ if [[ -n "$PROMPT_FILE_OVERRIDE" ]]; then
 elif [[ -n "$SPEC_NAME" ]]; then
   SPEC_FILE_PATH="$RALPH_DIR/specs/${SPEC_NAME}.md"
   if [[ ! -f "$SPEC_FILE_PATH" ]]; then
-    echo "Fehler: Spec-Datei nicht gefunden: $SPEC_FILE_PATH"
+    echo "Error: spec file not found: $SPEC_FILE_PATH"
     exit 1
   fi
   EFFECTIVE_PROMPT_FILE="$SPEC_FILE_PATH"
@@ -337,26 +337,26 @@ if [[ -n "$EFFECTIVE_PROMPT_FILE" ]]; then
 fi
 
 if [[ $DRY_RUN -eq 1 ]]; then
-  echo "🔍 Dry-run – Konfiguration (kein Befehl wird ausgeführt):"
-  echo "- Iterationen: $ITERATIONS"
-  echo "- Delay:       ${DELAY}s"
-  echo "- Timeout:     $( [[ $TIMEOUT -gt 0 ]] && echo "${TIMEOUT}s" || echo 'deaktiviert' )"
-  echo "- Stop-Regex:  $STOP_REGEX"
-  echo "- Resume:      $( [[ $RESUME -eq 1 ]] && echo 'ja' || echo 'nein' )"
-  echo "- Worktree:    $( [[ $WORKTREE -eq 1 ]] && echo 'ja' || echo 'nein' )"
-  echo "- Action-Inbox: $( [[ $ACTION_INBOX -eq 1 ]] && echo "ja (timeout: $( [[ $INBOX_TIMEOUT -gt 0 ]] && echo "${INBOX_TIMEOUT}s" || echo 'unbegrenzt' ))" || echo 'nein' )"
+  echo "🔍 Dry-run – configuration (no command will be executed):"
+  echo "- Iterations:   $ITERATIONS"
+  echo "- Delay:        ${DELAY}s"
+  echo "- Timeout:      $( [[ $TIMEOUT -gt 0 ]] && echo "${TIMEOUT}s" || echo 'disabled' )"
+  echo "- Stop regex:   $STOP_REGEX"
+  echo "- Resume:       $( [[ $RESUME -eq 1 ]] && echo 'yes' || echo 'no' )"
+  echo "- Worktree:     $( [[ $WORKTREE -eq 1 ]] && echo 'yes' || echo 'no' )"
+  echo "- Action inbox: $( [[ $ACTION_INBOX -eq 1 ]] && echo "yes (timeout: $( [[ $INBOX_TIMEOUT -gt 0 ]] && echo "${INBOX_TIMEOUT}s" || echo 'unlimited' ))" || echo 'no' )"
   if [[ -n "$EFFECTIVE_PROMPT_FILE" ]]; then
     if [[ -n "$PROMPT_FILE_OVERRIDE" ]]; then
-      echo "- Prompt-Datei: $EFFECTIVE_PROMPT_FILE (--prompt-file)"
+      echo "- Prompt file:  $EFFECTIVE_PROMPT_FILE (--prompt-file)"
     elif [[ -n "$SPEC_NAME" ]]; then
-      echo "- Prompt-Datei: $EFFECTIVE_PROMPT_FILE (--spec $SPEC_NAME)"
+      echo "- Prompt file:  $EFFECTIVE_PROMPT_FILE (--spec $SPEC_NAME)"
     elif [[ -f "PROMPT_TEMPLATE.md" ]]; then
-      echo "- Prompt-Datei: $EFFECTIVE_PROMPT_FILE (aus PROMPT_TEMPLATE.md)"
+      echo "- Prompt file:  $EFFECTIVE_PROMPT_FILE (from PROMPT_TEMPLATE.md)"
     else
-      echo "- Prompt-Datei: $EFFECTIVE_PROMPT_FILE (eingebettetes Template)"
+      echo "- Prompt file:  $EFFECTIVE_PROMPT_FILE (built-in template)"
     fi
   fi
-  printf '%s ' "- Kommando:" "${CMD[@]}"; echo
+  printf '%s ' "- Command:" "${CMD[@]}"; echo
   exit 0
 fi
 
@@ -364,15 +364,15 @@ ITER_STATUSES=()
 RUN_START_TS=0
 
 print_summary() {
-  local outcome="${1:-unbekannt}"
+  local outcome="${1:-unknown}"
   local elapsed=$(( $(date +%s) - RUN_START_TS ))
   local mins=$(( elapsed / 60 ))
   local secs=$(( elapsed % 60 ))
   echo ""
   echo "============================================================"
-  echo "📋 Run-Zusammenfassung"
+  echo "📋 Run Summary"
   echo "============================================================"
-  printf '  %-20s %dm %02ds\n' "Gesamtdauer:" "$mins" "$secs"
+  printf '  %-20s %dm %02ds\n' "Total time:" "$mins" "$secs"
   if [[ ${#ITER_STATUSES[@]} -gt 0 ]]; then
     echo ""
     printf '  %-6s  %-6s  %s\n' "Iter." "Exit" "Status"
@@ -387,11 +387,11 @@ print_summary() {
     done
   fi
   echo ""
-  printf '  %-20s %s\n' "Ergebnis:" "$outcome"
+  printf '  %-20s %s\n' "Outcome:" "$outcome"
   echo "============================================================"
 }
 
-trap 'echo; print_summary "⚠️  Unterbrochen (SIGINT)"; echo "Letzter Stand in $LAST_OUTPUT_FILE"; exit 130' INT
+trap 'echo; print_summary "⚠️  Interrupted (SIGINT)"; echo "Last output in $LAST_OUTPUT_FILE"; exit 130' INT
 
 mkdir -p "$RALPH_DIR"
 LOG_FILE="$RALPH_DIR/ralph.log"
@@ -405,7 +405,7 @@ WORKTREE_PATH=""
 WORKTREE_BRANCH=""
 if [[ $WORKTREE -eq 1 ]]; then
   if ! git rev-parse --is-inside-work-tree &>/dev/null; then
-    echo "Fehler: --worktree benötigt ein Git-Repository."
+    echo "Error: --worktree requires a Git repository."
     exit 1
   fi
   RUN_TS="$(date '+%Y%m%d-%H%M%S')"
@@ -413,7 +413,7 @@ if [[ $WORKTREE -eq 1 ]]; then
   WORKTREE_PATH="$(git rev-parse --show-toplevel)/.ralph/worktrees/${RUN_TS}"
   mkdir -p "$(dirname "$WORKTREE_PATH")"
   git worktree add -b "$WORKTREE_BRANCH" "$WORKTREE_PATH" HEAD
-  echo "🌿 Worktree erstellt: $WORKTREE_PATH (Branch: $WORKTREE_BRANCH)"
+  echo "🌿 Worktree created: $WORKTREE_PATH (branch: $WORKTREE_BRANCH)"
   # Copy generated prompt file into worktree if needed
   if [[ -n "$EFFECTIVE_PROMPT_FILE" && -f "$EFFECTIVE_PROMPT_FILE" ]]; then
     WT_RALPH_DIR="$WORKTREE_PATH/.ralph"
@@ -442,32 +442,32 @@ if [[ $RESUME -eq 1 && -f "$ITERATION_FILE" ]]; then
   saved=$(< "$ITERATION_FILE")
   if [[ "$saved" =~ ^[0-9]+$ && $saved -ge 1 && $saved -le $ITERATIONS ]]; then
     i=$saved
-    echo "▶️  Resume: starte bei Iteration $i"
+    echo "▶️  Resume: starting at iteration $i"
   fi
 fi
 
 if [[ $QUIET -eq 0 ]]; then
-  printf '%s\n' "--- Ralph Konfiguration ---"
-  printf '  %-18s %s\n' "Iterationen:"  "$ITERATIONS"
+  printf '%s\n' "--- Ralph Configuration ---"
+  printf '  %-18s %s\n' "Iterations:"   "$ITERATIONS"
   printf '  %-18s %s\n' "Delay:"        "${DELAY}s"
-  printf '  %-18s %s\n' "Timeout:"      "$( [[ $TIMEOUT -gt 0 ]] && echo "${TIMEOUT}s" || echo 'deaktiviert' )"
-  printf '  %-18s %s\n' "Stop-Regex:"   "$STOP_REGEX"
-  printf '  %-18s %s\n' "Resume:"       "$( [[ $RESUME -eq 1 ]] && echo 'ja' || echo 'nein' )"
-  printf '  %-18s %s\n' "Worktree:"     "$( [[ $WORKTREE -eq 1 ]] && echo "$WORKTREE_PATH" || echo 'nein' )"
-  printf '  %-18s %s\n' "Action-Inbox:" "$( [[ $ACTION_INBOX -eq 1 ]] && echo "ja (timeout: $( [[ $INBOX_TIMEOUT -gt 0 ]] && echo "${INBOX_TIMEOUT}s" || echo 'unbegrenzt' ))" || echo 'nein' )"
-  printf '  %-18s %s\n' "Log-Datei:"    "$LOG_FILE"
+  printf '  %-18s %s\n' "Timeout:"      "$( [[ $TIMEOUT -gt 0 ]] && echo "${TIMEOUT}s" || echo 'disabled' )"
+  printf '  %-18s %s\n' "Stop regex:"   "$STOP_REGEX"
+  printf '  %-18s %s\n' "Resume:"       "$( [[ $RESUME -eq 1 ]] && echo 'yes' || echo 'no' )"
+  printf '  %-18s %s\n' "Worktree:"     "$( [[ $WORKTREE -eq 1 ]] && echo "$WORKTREE_PATH" || echo 'no' )"
+  printf '  %-18s %s\n' "Action inbox:" "$( [[ $ACTION_INBOX -eq 1 ]] && echo "yes (timeout: $( [[ $INBOX_TIMEOUT -gt 0 ]] && echo "${INBOX_TIMEOUT}s" || echo 'unlimited' ))" || echo 'no' )"
+  printf '  %-18s %s\n' "Log file:"     "$LOG_FILE"
   if [[ -n "$EFFECTIVE_PROMPT_FILE" ]]; then
     if [[ -n "$PROMPT_FILE_OVERRIDE" ]]; then
-      printf '  %-18s %s\n' "Prompt-Datei:" "$EFFECTIVE_PROMPT_FILE (--prompt-file)"
+      printf '  %-18s %s\n' "Prompt file:" "$EFFECTIVE_PROMPT_FILE (--prompt-file)"
     elif [[ -n "$SPEC_NAME" ]]; then
-      printf '  %-18s %s\n' "Prompt-Datei:" "$EFFECTIVE_PROMPT_FILE (--spec $SPEC_NAME)"
+      printf '  %-18s %s\n' "Prompt file:" "$EFFECTIVE_PROMPT_FILE (--spec $SPEC_NAME)"
     elif [[ -f "PROMPT_TEMPLATE.md" ]]; then
-      printf '  %-18s %s\n' "Prompt-Datei:" "$EFFECTIVE_PROMPT_FILE (aus PROMPT_TEMPLATE.md)"
+      printf '  %-18s %s\n' "Prompt file:" "$EFFECTIVE_PROMPT_FILE (from PROMPT_TEMPLATE.md)"
     else
-      printf '  %-18s %s\n' "Prompt-Datei:" "$EFFECTIVE_PROMPT_FILE (eingebettetes Template)"
+      printf '  %-18s %s\n' "Prompt file:" "$EFFECTIVE_PROMPT_FILE (built-in template)"
     fi
   fi
-  printf '  Kommando:          '
+  printf '  Command:           '
   printf '%s ' "${CMD[@]}"; echo
   echo ""
 fi
@@ -498,7 +498,7 @@ while [[ $i -le $ITERATIONS ]]; do
     DIFF_STAT="$(git diff --stat HEAD 2>/dev/null)"
     if [[ -n "$DIFF_STAT" ]]; then
       echo ""
-      echo "📊 Änderungen seit letztem Commit (git diff --stat HEAD):"
+      echo "📊 Changes since last commit (git diff --stat HEAD):"
       echo "$DIFF_STAT"
     fi
   fi
@@ -507,17 +507,17 @@ while [[ $i -le $ITERATIONS ]]; do
   grep -Eiq "$STOP_REGEX" "$LAST_OUTPUT_FILE" && STOP_MATCHED=1 || true
 
   if [[ $STOP_MATCHED -eq 1 ]]; then
-    _ITER_NOTE="✓ Stopp"
+    _ITER_NOTE="✓ stop"
   elif [[ $EXIT_CODE -ne 0 ]]; then
-    _ITER_NOTE="✗ Fehler"
+    _ITER_NOTE="✗ error"
   else
-    _ITER_NOTE="→ weiter"
+    _ITER_NOTE="→ continue"
   fi
   ITER_STATUSES+=("$i:$EXIT_CODE:$_ITER_NOTE")
 
   if [[ $STOP_MATCHED -eq 1 ]]; then
-    echo "✅ Stopp-Bedingung erfüllt in Iteration $i"
-    print_summary "✅ Stopp-Bedingung erfüllt (Iteration $i)"
+    echo "✅ Stop condition matched in iteration $i"
+    print_summary "✅ Stop condition matched (iteration $i)"
     exit 0
   fi
 
@@ -527,20 +527,20 @@ while [[ $i -le $ITERATIONS ]]; do
       ACTION_MSG="${ACTION_LINE#ACTION_REQUIRED:}"
       ACTION_MSG="${ACTION_MSG#"${ACTION_MSG%%[![:space:]]*}"}"
       echo ""
-      echo "📬 Action Inbox – Agent wartet auf Eingabe:"
+      echo "📬 Action Inbox – agent is waiting for input:"
       echo "   $ACTION_MSG"
       echo ""
       if [[ $INBOX_TIMEOUT -gt 0 ]]; then
-        read -rp "Deine Antwort (${INBOX_TIMEOUT}s Timeout): " -t "$INBOX_TIMEOUT" USER_RESPONSE || {
+        read -rp "Your reply (${INBOX_TIMEOUT}s timeout): " -t "$INBOX_TIMEOUT" USER_RESPONSE || {
           echo ""
-          echo "⏱️ Timeout – keine Eingabe erhalten. Loop wird ohne Antwort fortgesetzt."
+          echo "⏱️ Timeout – no input received. Continuing without a reply."
           USER_RESPONSE=""
         }
       else
-        read -rp "Deine Antwort: " USER_RESPONSE
+        read -rp "Your reply: " USER_RESPONSE
       fi
       echo "$USER_RESPONSE" > "$INBOX_RESPONSE_FILE"
-      echo "✅ Antwort gespeichert in $INBOX_RESPONSE_FILE"
+      echo "✅ Reply saved to $INBOX_RESPONSE_FILE"
     fi
   fi
 
@@ -548,6 +548,6 @@ while [[ $i -le $ITERATIONS ]]; do
   sleep "$DELAY"
 done
 
-echo "⚠️ Max. Iterationen erreicht."
-print_summary "⚠️  Max. Iterationen ($ITERATIONS) erreicht"
+echo "⚠️ Max iterations reached."
+print_summary "⚠️  Max iterations ($ITERATIONS) reached"
 exit 2

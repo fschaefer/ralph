@@ -163,3 +163,203 @@ Now update tasks.md and progress.txt:
   │ banners wrapped with [[ $QUIET -eq 0 ]]…
   └ 5 lines...
 
+● Git commit (shell)
+  │ cd /Users/florians/Projekte/ralph && git add -A && git commit -m "ralph:
+  │ task update
+  │
+  │ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+  └ 3 lines...
+
+Now the final task: **§7 Documentation & Examples** — translate to English, update README, cleanup, use `github.com/fschaefer/ralph`.
+
+● Read basic.sh
+  │ examples/basic.sh
+  └ 15 lines read
+
+● Read with-action-inbox.sh
+  │ examples/with-action-inbox.sh
+  └ 29 lines read
+
+● Read monitor.sh
+  │ examples/monitor.sh
+  └ 15 lines read
+
+● Read with-prompt.sh
+  │ examples/with-prompt.sh
+  └ 18 lines read
+
+● Read with-worktree.sh
+  │ examples/with-worktree.sh
+  └ 19 lines read
+
+Now I'll translate all German text in ralph.sh and update the README to use the correct GitHub URL. Let me view the full current state of ralph.sh:
+
+● Read ralph.sh
+  └ L1:80 (80 lines read)
+
+● Read ralph.sh
+  └ L80:230 (150 lines read)
+
+● Read ralph.sh
+  └ L230:420 (191 lines read)
+
+● Read ralph.sh
+  └ L420:560 (134 lines read)
+
+Now I'll do a comprehensive translation of all German text in ralph.sh. I'll make multiple edits:
+
+● Edit ralph.sh +3 -3
+
+● Edit ralph.sh +35 -35
+
+Now translate the error messages in the flag parser:
+
+● Find all German error messages (shell)
+  │ grep -n 'Fehler:' /Users/florians/Projekte/ralph/ralph.sh
+  └ 19 lines...
+
+● Translate error messages (shell)
+  │ cd /Users/florians/Projekte/ralph && sed -i '' \
+  │ -e 's/Fehler: --delay benötigt einen Wert\./Error: --delay requires a
+  │ value./' \
+  │ -e 's/Fehler: --max-iterations benötigt einen Wert\./Error:
+  │ --max-iterations requires a value./' \…
+  └ 35 lines...
+
+● Translate monitor messages (shell)
+  │ cd /Users/florians/Projekte/ralph && sed -i '' \
+  │ -e 's/📡 Ralph Monitor – Live-Log/📡 Ralph Monitor – Live Log/' \
+  │ -e 's/Log-Datei:/Log file:/' \
+  │ -e 's/Aktuelle Iteration:/Current iteration:/' \
+  │ -e "s/(Drücke Ctrl+C zum Beenden)/(Press Ctrl+C to stop)/" \…
+  └ 3 lines...
+
+● Translate resume message (shell)
+  │ cd /Users/florians/Projekte/ralph && sed -i '' \
+  │ -e "s/▶️  Resume: starte bei Iteration/▶️  Resume: starting at iteration/" \
+  │ ralph.sh && echo "Done"
+  └ 2 lines...
+
+Now translate the config header labels:
+
+✗ Edit ralph.sh
+  └ No match found
+
+● Find config header lines (shell)
+  │ grep -n 'Ralph Konfiguration\|Iterationen:\|Delay:\|Timeout:.*deaktiviert\|S
+  │ top-Regex:\|Resume:.*nein\|Worktree:.*nein\|Action-Inbox:\|Log-Datei:\|Promp
+  │ t-Datei:\|Kommando:' /Users/florians/Projekte/ralph/ralph.sh | head -30
+  └ 26 lines...
+
+● Translate dry-run simple labels (shell)
+  │ cd /Users/florians/Projekte/ralph && sed -i '' \
+  │ -e "s/echo \"- Iterationen: \\\$ITERATIONS\"/echo \"- Iterations:
+  │ \$ITERATIONS\"/" \
+  │ -e "s/echo \"- Stop-Regex:  \\\$STOP_REGEX\"/echo \"- Stop regex:
+  │ \$STOP_REGEX\"/" \…
+  └ 9 lines...
+
+The complex inline substitutions are tricky with sed. Let me use Python for the remaining translations:
+
+● Translate remaining German text via Python (shell)
+  │ cd /Users/florians/Projekte/ralph && python3 - << 'PYEOF'
+  │ import re
+  │
+  │ with open('ralph.sh', 'r') as f:
+  │ content = f.read()…
+  └ 194 lines...
+
+Some items weren't found (the dry-run timeout/action-inbox/resume/worktree lines). Let me fix those manually:
+
+● Check remaining German strings (shell)
+  │ grep -n 'deaktiviert\|unbegrenzt\|nein\|ja\|Log-Datei\|Prompt-Datei\|Kommand
+  │ o\|Iterationen\|Stop-Regex\|Action-Inbox\|Zusammenfassung\|Stopp\|Fehler\|we
+  │ iter\|Antwort\|Worktree.*nein\|Resume.*nein'
+  │ /Users/florians/Projekte/ralph/ralph.sh | grep -v '^\s*#' | head -30
+  └ 9 lines...
+
+● Read ralph.sh
+  └ L338:365 (27 lines read)
+
+● Edit ralph.sh +8 -8
+
+Now fix the config header (lines 450-470):
+
+● Read ralph.sh
+  └ L449:476 (27 lines read)
+
+● Edit ralph.sh +4 -4
+
+Now translate the embedded prompt template to English:
+
+● Edit ralph.sh +27 -27
+
+Also update PROMPT_TEMPLATE.md to English:
+
+● Edit PROMPT_TEMPLATE.md +27 -27
+
+Now update the README GitHub URL and fix any remaining German:
+
+● Edit README.md +1 -1
+
+Now also update the README's Action Inbox section which still has German UI strings, and add a `--spec` and `--quiet` example to the examples list:
+
+● Edit README.md +3 -3
+
+Also update the Run Summary section to show English output:
+
+● Edit README.md +1 -1
+
+Now add examples for `--spec` and `--quiet` to the examples list and ensure examples/with-action-inbox.sh has consistent style:
+
+● Edit README.md +2
+
+Create the two new example files:
+
+● Create with-spec.sh +22
+  └ examples/with-spec.sh
+
+● Create quiet.sh +17
+  └ examples/quiet.sh
+
+Also fix the with-action-inbox.sh to use consistent shebang style:
+
+● Edit with-action-inbox.sh +5 -4
+  └ examples/with-action-inbox.sh
+
+Now clean up the test spec file and do a final verification:
+
+● Final syntax check and dry-run test (shell)
+  │ cd /Users/florians/Projekte/ralph && rm -f .ralph/specs/mytest.md && rmdir
+  │ .ralph/specs 2>/dev/null || true
+  │ bash -n ralph.sh && echo "Syntax OK"
+  │ ./ralph.sh --dry-run 3 -- echo hello 2>&1
+  └ 11 lines...
+
+● Check for remaining German in ralph.sh (shell)
+  │ grep -n 'Fehler\|nein\|ja\|deaktiviert\|unbegrenzt\|Iterationen\|Stopp\|Antw
+  │ ort\|Zusammenfassung\|Konfiguration\|Kommando\|Ergebnis\|Gesamtdauer\|Prompt
+  │ -Datei\|Log-Datei\|Action-Inbox\|Stop-Regex\|Worktree.*nein\|Worktree.*ja\|R
+  │ esume.*nein\|Resume.*ja' /Users/florians/Projekte/ralph/ralph.sh | grep -v
+  │ '^\s*#' | grep -v 'EMBEDDED_EOF\|PYEOF\|EMBEDDED_PROMPT'
+  └ 1 line...
+
+No more German strings in ralph.sh. Now check the README:
+
+● Check README for remaining German (shell)
+  │ grep -n 'youruser\|Änderungen\|wartet\|Eingabe\|Antwort'
+  │ /Users/florians/Projekte/ralph/README.md
+  └ 1 line...
+
+All clean. Update tasks.md, progress.txt, and commit:
+
+● Edit tasks.md +5 -5
+
+● Append progress (shell)
+  │ cat >> /Users/florians/Projekte/ralph/progress.txt << 'EOF'
+  │
+  │ [2026-05-02] Iteration 7: Task "Documentation & Examples"
+  │ - ralph.sh: translated all German strings to English (usage, error
+  │ messages, config header, dry-run, monitor, action inbox, run summary, …
+  └ 13 lines...
+
