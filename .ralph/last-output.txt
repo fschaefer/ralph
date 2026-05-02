@@ -1,64 +1,87 @@
 ● Read PROMPT.md
-  └ 61 lines read
+  └ 64 lines read
 
-● List directory .
-  └ 6 files found
+● List project files (shell)
+  │ ls /Users/florians/Projekte/ralph/
+  └ 2 lines...
 
-● Check for tasks.md, progress.txt, and ralph.sh (shell)
-  │ ls /Users/florians/Projekte/ralph/tasks.md
-  │ /Users/florians/Projekte/ralph/progress.txt 2>&1; echo "---"; cat
-  │ /Users/florians/Projekte/ralph/ralph.sh 2>/dev/null || echo "ralph.sh not
-  │ found"
-  └ 4 lines...
+● Read tasks.md (shell)
+  │ cat /Users/florians/Projekte/ralph/tasks.md 2>/dev/null || echo
+  │ "FILE_NOT_FOUND"
+  └ 2 lines...
 
-● Read tasks.md
-  └ 10 lines read
+● Read progress.txt (shell)
+  │ cat /Users/florians/Projekte/ralph/progress.txt 2>/dev/null || echo
+  │ "FILE_NOT_FOUND"
+  └ 2 lines...
 
-● Read progress.txt
-  └ 6 lines read
+● Read ralph.sh and list src/ (shell)
+  │ cat /Users/florians/Projekte/ralph/src/ralph.sh && echo "---" && ls
+  │ /Users/florians/Projekte/ralph/src/
+  └ 178 lines...
 
-● List directory src
-  └ 1 file found
+● Fetching web content https://github.com/federiconeri/wiggum-cli · url: "https://github.com/federi…
+  └ Contents of https://github.com/federiconeri/wiggum-cli:
 
-● Read ralph.sh
-  │ src/ralph.sh
-  └ 150 lines read
+● Fetching web content https://github.com/federiconeri/wiggum-cli · url: "https://github.com/federi…
+  └ Contents of https://github.com/federiconeri/wiggum-cli:
 
-**SCHRITT 1: Orientierung** – tasks.md und progress.txt existieren. Nächster offener Task ist **Named flags**.
+● Read PROMPT_TEMPLATE.md (shell)
+  │ cat /Users/florians/Projekte/ralph/src/PROMPT_TEMPLATE.md
+  └ 53 lines...
 
-**SCHRITT 2: Task-Auswahl** – Implementiere `--max-iterations <n>` und `--stop-regex <pattern>` als benannte Flags.
+● Check git status (shell)
+  │ cd /Users/florians/Projekte/ralph && git log --oneline -5 && git status
+  └ 21 lines...
 
-● Edit ralph.sh +9 -5
-  └ src/ralph.sh
+● Check last output from last iteration (shell)
+  │ cd /Users/florians/Projekte/ralph && git show HEAD:.ralph/last-output.txt
+  │ 2>/dev/null | tail -30 || echo "not in git"
+  └ 29 lines...
 
-● Edit ralph.sh +15
-  └ src/ralph.sh
+● Read tasks.md and progress.txt from last commit (shell)
+  │ cd /Users/florians/Projekte/ralph && git show HEAD:tasks.md 2>/dev/null ||
+  │ echo "No tasks.md in HEAD" && git show HEAD:progress.txt 2>/dev/null || echo
+  │ "No progress.txt in HEAD"
+  └ 19 lines...
 
-Now update the STOP_REGEX line to use the arg if provided:
+**Iteration 1 – State Recovery**: Es sind keine `tasks.md`/`progress.txt` vorhanden. Vorherige Iteration hat bereits alle Basis-Features implementiert. Erstelle jetzt die neue Task-Liste und beginne mit dem nächsten Task.
 
-● Edit ralph.sh +1 -1
-  └ src/ralph.sh
+**SCHRITT 1 & 2**: Erstelle tasks.md/progress.txt, wähle ersten offenen Task.
+
+● Create progress.txt +2
+
+● Create tasks.md +21
+
+**SCHRITT 3: Implementierung – Task: Projektstruktur**
+
+● Move files from src/ to root, remove src/ (shell)
+  │ cd /Users/florians/Projekte/ralph && cp src/ralph.sh ralph.sh && cp
+  │ src/PROMPT_TEMPLATE.md PROMPT_TEMPLATE.md && rm -rf src/ && ls -la
+  └ 11 lines...
+
+● Check existing .gitignore (shell)
+  │ cat /Users/florians/Projekte/ralph/.gitignore 2>/dev/null || echo
+  │ "NO_GITIGNORE"
+  └ 2 lines...
+
+● Create .gitignore +3
 
 **SCHRITT 4: Verifikation**
 
-● Syntax check and functional tests (shell)
-  │ cd /Users/florians/Projekte/ralph
-  │ bash -n src/ralph.sh && echo "Syntax OK"
-  │
-  │ # Test --max-iterations flag
-  │ bash src/ralph.sh --max-iterations 2 --dry-run -- echo "hi" | grep …
-  └ 21 lines...
+● Syntax check and dry-run test (shell)
+  │ cd /Users/florians/Projekte/ralph && bash -n ralph.sh && echo "Syntax OK" &&
+  │ bash ralph.sh --dry-run 3 -- echo hi
+  └ 8 lines...
 
-All tests pass. **SCHRITT 5: Gedächtnis aktualisieren** und tasks.md markieren:
+**SCHRITT 5: Gedächtnis aktualisieren**
 
 ● Edit tasks.md +1 -1
 
 ● Update progress.txt (shell)
-  │ echo "[2026-05-02] Task: Named flags. Datei: src/ralph.sh. --max-iterations
-  │ <n> und --stop-regex <pattern> Flags hinzugefügt (inkl. = Variante).
-  │ STOP_REGEX_ARG hat Vorrang vor STOP_REGEX Env-Var. Rückwärtskompatibilität
-  │ erhalten. Syntax-Check + Funktionstests OK." >>
-  │ /Users/florians/Projekte/ralph/progress.txt
+  │ echo "[2026-05-02] Task: Projektstruktur. ralph.sh + PROMPT_TEMPLATE.md aus
+  │ src/ ins Root verschoben. src/ gelöscht. .gitignore für .ralph/ erstellt.
+  │ Syntax-Check + Dry-run: OK." >> /Users/florians/Projekte/ralph/progress.txt
   └ 1 line...
 
 **SCHRITT 6: Git Commit**

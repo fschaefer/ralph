@@ -1,10 +1,20 @@
 # ralph.sh – Aufgabenliste (inspiriert von wiggum-cli)
 
-## Features aus wiggum-cli, die portierbar sind
+## Bereits erledigt (vorherige Iterationen)
 
-- [x] **SIGINT**: Trap Ctrl+C, log Unterbrechung, exit mit Code 130
-- [x] **Delay**: `--delay <s>` Flag und `RALPH_DELAY` Umgebungsvariable (Standard 2s) für konfigurierbaren Sleep zwischen Iterationen
-- [x] **Dry-run**: `--dry-run` Flag – Konfiguration ausgeben, ohne den Befehl auszuführen; exit 0
-- [x] **Resume**: `--resume` Flag – aktuelle Iteration in `.ralph/iteration.txt` speichern; beim nächsten Start mit `--resume` dort weitermachen
-- [x] **Named flags**: `--max-iterations <n>` und `--stop-regex <pattern>` als benannte Alternativen zu Positionalargument/Env-Var hinzufügen (Rückwärtskompatibilität bleibt erhalten)
-- [x] **Config-Display**: Formatierte Konfigurationsübersicht (Iterationen, Kommando, Delay, Regex) vor dem Schleifenstart ausgeben
+- [x] **SIGINT**: Trap Ctrl+C → exit 130, letzter Stand anzeigen
+- [x] **Delay**: `--delay <s>` Flag + `RALPH_DELAY` Env-Var (Standard 2s)
+- [x] **Dry-run**: `--dry-run` Flag – Konfiguration anzeigen, kein Befehl
+- [x] **Resume**: `--resume` Flag – Iteration in `.ralph/iteration.txt` speichern
+- [x] **Named flags**: `--max-iterations <n>` und `--stop-regex <pattern>`
+- [x] **Config-Display**: Formatierte Konfigurationsübersicht vor Schleifenstart
+
+## Neue Features
+
+- [x] **Projektstruktur**: `ralph.sh` und `PROMPT_TEMPLATE.md` aus `src/` ins Root verschieben; `.gitignore` für `.ralph/` anlegen; `src/` löschen
+- [ ] **PROMPT-Integration**: `--goal <text>` und `--stack <text>` Flags; Template befüllen → `.ralph/PROMPT.md`; `{PROMPT_FILE}` Platzhalter in CMD-Args ersetzen; `--prompt-file <path>` Override
+- [ ] **--worktree**: Git Worktree Isolation für parallele Runs; separates Verzeichnis je Run
+- [ ] **Run Summary**: Nach jedem Loop kompakte Zusammenfassung via `git diff --stat` ausgeben
+- [ ] **README.md**: Installation, Usage, alle Flags, Beispiele, PROMPT-Integration erklärt
+- [ ] **examples/**: Beispielskripte (`basic.sh`, `with-prompt.sh`, `with-worktree.sh`)
+- [ ] **PROMPT_TEMPLATE.md**: Platzhalter `{{GOAL}}` und `{{STACK}}` klar kennzeichnen; minimaler User-Input dokumentieren
