@@ -363,3 +363,36 @@ All clean. Update tasks.md, progress.txt, and commit:
   │ messages, config header, dry-run, monitor, action inbox, run summary, …
   └ 13 lines...
 
+● Final git commit (shell)
+  │ cd /Users/florians/Projekte/ralph && git add -A && git commit -m "ralph:
+  │ task update
+  │
+  │ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+  └ 5 lines...
+
+All tasks complete. Final verification:
+
+● Verify all tasks done (shell)
+  │ cd /Users/florians/Projekte/ralph && bash -n ralph.sh && echo "✅ Syntax OK"
+  │ && grep '^\- \[.\]' tasks.md | head -20
+  └ 22 lines...
+
+● Check for remaining open tasks (shell)
+  │ grep '^\- \[ \]' /Users/florians/Projekte/ralph/tasks.md
+  └ 2 lines...
+
+● Find unchecked tasks (shell)
+  │ grep -n '\[ \]' /Users/florians/Projekte/ralph/tasks.md
+  └ 2 lines...
+
+● Read tasks.md
+  └ L45:52 (6 lines read)
+
+One more task: add `.ralph` gitignore advice to the embedded prompt. Let me implement this:
+
+● Edit ralph.sh +1
+
+● Edit PROMPT_TEMPLATE.md +1
+
+● Edit tasks.md +1 -1
+

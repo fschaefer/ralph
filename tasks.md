@@ -47,4 +47,4 @@
 - [x] Ensure all examples are consistent with new features
 - [x] Cleanup folder
 - [x] Use github.com/fschaefer/ralph
-- [ ] add to prompt that .ralph directory should be excluded in .gitignore if git is used
+- [x] add to prompt that .ralph directory should be excluded in .gitignore if git is used

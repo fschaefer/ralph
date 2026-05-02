@@ -41,3 +41,9 @@
 - examples/with-spec.sh: created
 - examples/quiet.sh: created
 - Verification: bash -n OK; dry-run output is fully English; no German strings remain in runtime code paths
+
+[2026-05-02] Iteration 8: Task "Add .gitignore note to prompt"
+- ralph.sh: added gitignore note to step 6 of embedded prompt template
+- PROMPT_TEMPLATE.md: same note added
+- tasks.md: final task marked done
+- Verification: bash -n OK

@@ -286,6 +286,7 @@ Mark the task in tasks.md as done (e.g. [x]) only when the code has been written
 STEP 6: Git commit
 
 Run via terminal: git add . followed by git commit -m "ralph: task update"
+Note: make sure .ralph/ is listed in .gitignore so the runner's state files are not committed.
 
 STEP 7: Termination
 
