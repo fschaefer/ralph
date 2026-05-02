@@ -269,6 +269,15 @@ while [[ $i -le $ITERATIONS ]]; do
     echo
   } >> "$LOG_FILE"
 
+  if git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
+    DIFF_STAT="$(git diff --stat HEAD 2>/dev/null)"
+    if [[ -n "$DIFF_STAT" ]]; then
+      echo ""
+      echo "📊 Änderungen seit letztem Commit (git diff --stat HEAD):"
+      echo "$DIFF_STAT"
+    fi
+  fi
+
   if grep -Eiq "$STOP_REGEX" "$LAST_OUTPUT_FILE"; then
     echo "✅ Stopp-Bedingung erfüllt in Iteration $i"
     exit 0

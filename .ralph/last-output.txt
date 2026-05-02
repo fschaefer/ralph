@@ -1,76 +1,35 @@
 ● Read PROMPT.md
   └ 64 lines read
 
-● Read project state files (shell)
+● List project files and read tasks/progress (shell)
   │ ls /Users/florians/Projekte/ralph/ && echo "---" && cat
   │ /Users/florians/Projekte/ralph/tasks.md 2>/dev/null || echo "NO tasks.md" &&
   │ echo "---" && cat /Users/florians/Projekte/ralph/progress.txt 2>/dev/null ||
   │ echo "NO progress.txt"
-  └ 27 lines...
+  └ 28 lines...
 
 ● Read ralph.sh
-  └ 238 lines read
+  └ 282 lines read
 
 ● Read PROMPT_TEMPLATE.md
   └ 55 lines read
 
-**Next task:** `--worktree` — Git Worktree Isolation. Let me check the wiggum-cli reference first.
+**Next task:** Run Summary – `git diff --stat` nach jeder Iteration.
 
-● Fetching web content https://github.com/federiconeri/wiggum-cli · url: "https://github.com/federi…
-  └ Contents of https://github.com/federiconeri/wiggum-cli:
+● Edit ralph.sh +9
 
-Now I'll implement the `--worktree` feature:
+● Syntax check and dry-run verification (shell)
+  │ cd /Users/florians/Projekte/ralph && bash -n ralph.sh && echo "Syntax OK" &&
+  │ bash ralph.sh --dry-run 1 -- echo test
+  └ 9 lines...
 
-● Edit ralph.sh +2
-
-● Edit ralph.sh +1
-
-● Edit ralph.sh +3
-
-Now add the dry-run display for worktree and the worktree setup logic before the main loop:
-
-● Edit ralph.sh +1
-
-Now add the worktree setup block and update the config display:
-
-● Edit ralph.sh +36
-
-Now update the config display to show the worktree info:
-
-● Edit ralph.sh +1
-
-Now verify the final script looks correct:
-
-● Syntax check ralph.sh (shell)
-  │ bash -n /Users/florians/Projekte/ralph/ralph.sh && echo "Syntax OK"
-  └ 2 lines...
-
-● Test --worktree dry-run (shell)
-  │ cd /Users/florians/Projekte/ralph && ./ralph.sh --worktree --dry-run 3 --
-  │ echo "test"
-  └ 8 lines...
-
-● Test --worktree live run (shell)
-  │ cd /Users/florians/Projekte/ralph && ./ralph.sh --worktree 2 -- bash -c
-  │ 'echo "iter"; echo "COMPLETE: true"' 2>&1 | head -40
-  └ 19 lines...
-
-Works perfectly. Let me clean up the test worktree:
-
-● Cleanup test worktree (shell)
-  │ cd /Users/florians/Projekte/ralph && git worktree remove --force
-  │ .ralph/worktrees/20260502-095250 && git branch -D ralph/run-20260502-095250
-  │ && echo "Cleaned up"
-  └ 3 lines...
-
-Now update tasks.md, progress.txt, and commit:
+Gut. Jetzt `tasks.md` und `progress.txt` aktualisieren und committen.
 
 ● Edit tasks.md +1 -1
 
-● Append progress entry (shell)
-  │ echo "[2026-05-02] Task: --worktree. ralph.sh: --worktree Flag; erstellt git
-  │ worktree unter .ralph/worktrees/<ts> auf Branch ralph/run-<ts>; Agent läuft
-  │ im Worktree; Logs/State in Worktree; Syntax-Check + Live-Test: OK." >>
-  │ /Users/florians/Projekte/ralph/progress.txt
+● Append to progress.txt (shell)
+  │ echo "[2026-05-02] Task: Run Summary. ralph.sh: git diff --stat HEAD nach
+  │ jeder Iteration ausgegeben (nur in Git-Repos). Syntax-Check + Dry-run: OK."
+  │ >> /Users/florians/Projekte/ralph/progress.txt
   └ 1 line...
 
