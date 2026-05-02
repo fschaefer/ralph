@@ -1,104 +1,76 @@
 ● Read PROMPT.md
   └ 64 lines read
 
-● List directory .
-  └ 8 files found
-
-● Search (glob)
-  │ "tasks.md"
-  └ 1 file found
-
-● Search (glob)
-  │ "progress.txt"
-  └ 1 file found
-
-● Read tasks.md
-  └ 20 lines read
-
-● Read progress.txt
-  └ 2 lines read
+● Read project state files (shell)
+  │ ls /Users/florians/Projekte/ralph/ && echo "---" && cat
+  │ /Users/florians/Projekte/ralph/tasks.md 2>/dev/null || echo "NO tasks.md" &&
+  │ echo "---" && cat /Users/florians/Projekte/ralph/progress.txt 2>/dev/null ||
+  │ echo "NO progress.txt"
+  └ 27 lines...
 
 ● Read ralph.sh
-  └ 175 lines read
+  └ 238 lines read
 
 ● Read PROMPT_TEMPLATE.md
-  └ 52 lines read
+  └ 55 lines read
+
+**Next task:** `--worktree` — Git Worktree Isolation. Let me check the wiggum-cli reference first.
 
 ● Fetching web content https://github.com/federiconeri/wiggum-cli · url: "https://github.com/federi…
   └ Contents of https://github.com/federiconeri/wiggum-cli:
 
-**SCHRITT 2**: Nächster Task: **PROMPT-Integration** (`--goal`, `--stack`, `--prompt-file` Flags + Template-Befüllung).
+Now I'll implement the `--worktree` feature:
 
-**SCHRITT 3**: Implementierung.
+● Edit ralph.sh +2
 
-First, update PROMPT_TEMPLATE.md with proper placeholders:
-
-● Edit PROMPT_TEMPLATE.md +3
-
-Now update `ralph.sh` with PROMPT-Integration:
-
-✗ edit edit file · old_str: "usage() {   cat <<'EOF' Usage:   ./ralph.sh [--delay <s>] [-…", new_st…
-  └ "path": Required
-
-● Edit ralph.sh +10 -1
-
-Now add the new variables and parse flags:
+● Edit ralph.sh +1
 
 ● Edit ralph.sh +3
 
-Now add the new flags to the argument parsing loop:
-
-● Edit ralph.sh +21
-
-Now add the PROMPT generation logic and CMD substitution. I'll add it after the validation block and before the dry-run check:
-
-● Edit ralph.sh +28
-
-Now update the dry-run section and config display to include the new fields. First, fix the dry-run to show prompt info, and remove the duplicate `RALPH_DIR` definition later:
+Now add the dry-run display for worktree and the worktree setup logic before the main loop:
 
 ● Edit ralph.sh +1
 
-Now remove the duplicate `RALPH_DIR` definition further down:
+Now add the worktree setup block and update the config display:
 
-● Edit ralph.sh +1 -1
+● Edit ralph.sh +36
 
-Update config display to show prompt file if set:
+Now update the config display to show the worktree info:
 
 ● Edit ralph.sh +1
 
-**SCHRITT 4**: Verifikation:
+Now verify the final script looks correct:
 
 ● Syntax check ralph.sh (shell)
-  │ cd /Users/florians/Projekte/ralph && bash -n ralph.sh && echo "Syntax OK"
+  │ bash -n /Users/florians/Projekte/ralph/ralph.sh && echo "Syntax OK"
   └ 2 lines...
 
-● Test dry-run and PROMPT-Integration (shell)
-  │ cd /Users/florians/Projekte/ralph && bash ralph.sh --dry-run 3 -- echo hello
-  │ && echo "---" && bash ralph.sh --goal "Build a REST API" --stack "Node.js,
-  │ Express" --dry-run 3 -- echo "{PROMPT_FILE}"
-  └ 15 lines...
+● Test --worktree dry-run (shell)
+  │ cd /Users/florians/Projekte/ralph && ./ralph.sh --worktree --dry-run 3 --
+  │ echo "test"
+  └ 8 lines...
 
-● Check generated PROMPT.md (shell)
-  │ cd /Users/florians/Projekte/ralph && bash ralph.sh --goal "Build a REST API"
-  │ --stack "Node.js, Express" --dry-run 3 -- echo "{PROMPT_FILE}" && cat
-  │ .ralph/PROMPT.md | head -10
-  └ 18 lines...
+● Test --worktree live run (shell)
+  │ cd /Users/florians/Projekte/ralph && ./ralph.sh --worktree 2 -- bash -c
+  │ 'echo "iter"; echo "COMPLETE: true"' 2>&1 | head -40
+  └ 19 lines...
 
-Works perfectly. **SCHRITT 5**: Update memory and tasks.md:
+Works perfectly. Let me clean up the test worktree:
 
-● Update progress.txt (shell)
-  │ echo "[2026-05-02] Task: PROMPT-Integration. ralph.sh: --goal, --stack,
-  │ --prompt-file Flags; PROMPT_TEMPLATE.md befüllt → .ralph/PROMPT.md;
-  │ {PROMPT_FILE} in CMD-Args ersetzt. PROMPT_TEMPLATE.md: {{GOAL}} und
-  │ {{STACK}} Platzhalter gesetzt. Syntax-Check + Dry-run: OK." >>
+● Cleanup test worktree (shell)
+  │ cd /Users/florians/Projekte/ralph && git worktree remove --force
+  │ .ralph/worktrees/20260502-095250 && git branch -D ralph/run-20260502-095250
+  │ && echo "Cleaned up"
+  └ 3 lines...
+
+Now update tasks.md, progress.txt, and commit:
+
+● Edit tasks.md +1 -1
+
+● Append progress entry (shell)
+  │ echo "[2026-05-02] Task: --worktree. ralph.sh: --worktree Flag; erstellt git
+  │ worktree unter .ralph/worktrees/<ts> auf Branch ralph/run-<ts>; Agent läuft
+  │ im Worktree; Logs/State in Worktree; Syntax-Check + Live-Test: OK." >>
   │ /Users/florians/Projekte/ralph/progress.txt
   └ 1 line...
-
-● Edit tasks.md +1 -1
-
-Also mark PROMPT_TEMPLATE.md task as done since we handled it:
-
-● Edit tasks.md +1 -1
-
-**SCHRITT 6**: Git Commit:
 

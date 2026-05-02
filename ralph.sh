@@ -20,6 +20,7 @@ Optionen:
   --stop-regex <pattern>   Regex zum Erkennen des Stopp-Signals (Standard: STOP_REGEX oder ^COMPLETE:...)
   --dry-run                Konfiguration ausgeben, ohne den Befehl auszuführen; exit 0
   --resume                 Bei der zuletzt gespeicherten Iteration weitermachen (.ralph/iteration.txt)
+  --worktree               Isolierten Git Worktree für diesen Run erstellen (Branch: ralph/run-<ts>)
   --goal <text>            Projektziel (befüllt {{GOAL}} in PROMPT_TEMPLATE.md → .ralph/PROMPT.md)
   --stack <text>           Technologie-Stack (befüllt {{STACK}} in PROMPT_TEMPLATE.md → .ralph/PROMPT.md)
   --prompt-file <path>     Fertigen Prompt direkt übergeben (überschreibt --goal/--stack)
@@ -36,6 +37,7 @@ Beispiel:
   ./ralph.sh --stop-regex '^DONE$' 3 -- pi -p "Schreib einfach nur OK"
   ./ralph.sh --dry-run 3 -- pi -p "Schreib einfach nur OK"
   ./ralph.sh --resume 3 -- pi -p "Schreib einfach nur OK"
+  ./ralph.sh --worktree 5 -- claude -p @{PROMPT_FILE}
   ./ralph.sh --goal "Baue eine REST API" --stack "Node.js, Express" 5 -- claude -p @{PROMPT_FILE}
 
 Hinweis:
@@ -49,6 +51,7 @@ ITERATIONS="5"
 DELAY="${RALPH_DELAY:-2}"
 DRY_RUN=0
 RESUME=0
+WORKTREE=0
 STOP_REGEX_ARG=""
 GOAL=""
 STACK=""
@@ -86,6 +89,9 @@ while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
       ;;
     --resume)
       RESUME=1; shift
+      ;;
+    --worktree)
+      WORKTREE=1; shift
       ;;
     --goal)
       [[ -z "${2:-}" ]] && { echo "Fehler: --goal benötigt einen Wert."; exit 1; }
@@ -174,6 +180,7 @@ if [[ $DRY_RUN -eq 1 ]]; then
   echo "- Delay:       ${DELAY}s"
   echo "- Stop-Regex:  $STOP_REGEX"
   echo "- Resume:      $( [[ $RESUME -eq 1 ]] && echo 'ja' || echo 'nein' )"
+  echo "- Worktree:    $( [[ $WORKTREE -eq 1 ]] && echo 'ja' || echo 'nein' )"
   [[ -n "$EFFECTIVE_PROMPT_FILE" ]] && echo "- Prompt-Datei: $EFFECTIVE_PROMPT_FILE"
   printf '%s ' "- Kommando:" "${CMD[@]}"; echo
   exit 0
@@ -186,6 +193,42 @@ LOG_FILE="$RALPH_DIR/ralph.log"
 LAST_OUTPUT_FILE="$RALPH_DIR/last-output.txt"
 ITERATION_FILE="$RALPH_DIR/iteration.txt"
 mkdir -p "$RALPH_DIR"
+
+# Git Worktree Isolation
+WORKTREE_PATH=""
+WORKTREE_BRANCH=""
+if [[ $WORKTREE -eq 1 ]]; then
+  if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+    echo "Fehler: --worktree benötigt ein Git-Repository."
+    exit 1
+  fi
+  RUN_TS="$(date '+%Y%m%d-%H%M%S')"
+  WORKTREE_BRANCH="ralph/run-${RUN_TS}"
+  WORKTREE_PATH="$(git rev-parse --show-toplevel)/.ralph/worktrees/${RUN_TS}"
+  mkdir -p "$(dirname "$WORKTREE_PATH")"
+  git worktree add -b "$WORKTREE_BRANCH" "$WORKTREE_PATH" HEAD
+  echo "🌿 Worktree erstellt: $WORKTREE_PATH (Branch: $WORKTREE_BRANCH)"
+  # Copy generated prompt file into worktree if needed
+  if [[ -n "$EFFECTIVE_PROMPT_FILE" && -f "$EFFECTIVE_PROMPT_FILE" ]]; then
+    WT_RALPH_DIR="$WORKTREE_PATH/.ralph"
+    mkdir -p "$WT_RALPH_DIR"
+    cp "$EFFECTIVE_PROMPT_FILE" "$WT_RALPH_DIR/PROMPT.md"
+    # Update CMD to use the worktree-local prompt path
+    WT_PROMPT="$WT_RALPH_DIR/PROMPT.md"
+    for i in "${!CMD[@]}"; do
+      CMD[$i]="${CMD[$i]//$EFFECTIVE_PROMPT_FILE/$WT_PROMPT}"
+    done
+    EFFECTIVE_PROMPT_FILE="$WT_PROMPT"
+  fi
+  # Redirect log/output files into worktree
+  WT_RALPH_DIR="$WORKTREE_PATH/.ralph"
+  mkdir -p "$WT_RALPH_DIR"
+  LOG_FILE="$WT_RALPH_DIR/ralph.log"
+  LAST_OUTPUT_FILE="$WT_RALPH_DIR/last-output.txt"
+  ITERATION_FILE="$WT_RALPH_DIR/iteration.txt"
+  # Change to worktree directory for the agent run
+  cd "$WORKTREE_PATH"
+fi
 
 i=1
 if [[ $RESUME -eq 1 && -f "$ITERATION_FILE" ]]; then
@@ -201,6 +244,7 @@ printf '  %-18s %s\n' "Iterationen:"  "$ITERATIONS"
 printf '  %-18s %s\n' "Delay:"        "${DELAY}s"
 printf '  %-18s %s\n' "Stop-Regex:"   "$STOP_REGEX"
 printf '  %-18s %s\n' "Resume:"       "$( [[ $RESUME -eq 1 ]] && echo 'ja' || echo 'nein' )"
+printf '  %-18s %s\n' "Worktree:"     "$( [[ $WORKTREE -eq 1 ]] && echo "$WORKTREE_PATH" || echo 'nein' )"
 printf '  %-18s %s\n' "Log-Datei:"    "$LOG_FILE"
 [[ -n "$EFFECTIVE_PROMPT_FILE" ]] && printf '  %-18s %s\n' "Prompt-Datei:" "$EFFECTIVE_PROMPT_FILE"
 printf '  Kommando:          '
