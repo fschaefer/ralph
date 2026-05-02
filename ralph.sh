@@ -485,8 +485,19 @@ while [[ $i -le $ITERATIONS ]]; do
   fi
 
   set +e
-  "${CMD[@]}" 2>&1 | tee "$LAST_OUTPUT_FILE"
-  EXIT_CODE=${PIPESTATUS[0]}
+  if [[ $TIMEOUT -gt 0 ]]; then
+    if command -v timeout >/dev/null 2>&1; then
+      timeout "$TIMEOUT" "${CMD[@]}" 2>&1 | tee "$LAST_OUTPUT_FILE"
+      EXIT_CODE=${PIPESTATUS[0]}
+    else
+      echo "⚠️  Warning: 'timeout' command not found; running without timeout" >&2
+      "${CMD[@]}" 2>&1 | tee "$LAST_OUTPUT_FILE"
+      EXIT_CODE=${PIPESTATUS[0]}
+    fi
+  else
+    "${CMD[@]}" 2>&1 | tee "$LAST_OUTPUT_FILE"
+    EXIT_CODE=${PIPESTATUS[0]}
+  fi
   set -e
 
   {
@@ -509,6 +520,8 @@ while [[ $i -le $ITERATIONS ]]; do
 
   if [[ $STOP_MATCHED -eq 1 ]]; then
     _ITER_NOTE="✓ stop"
+  elif [[ $TIMEOUT -gt 0 && $EXIT_CODE -eq 124 ]]; then
+    _ITER_NOTE="⏱ timeout"
   elif [[ $EXIT_CODE -ne 0 ]]; then
     _ITER_NOTE="✗ error"
   else

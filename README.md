@@ -44,7 +44,7 @@ The `--` separator is **required** to distinguish ralph flags from the agent com
 |---|---|---|
 | `--max-iterations <n>` | `5` | Maximum number of loop iterations |
 | `--delay <s>` | `2` (or `$RALPH_DELAY`) | Pause between iterations in seconds |
-| `--timeout <s>` | `0` (off) | Per-iteration timeout; kills agent after `<s>` seconds |
+| `--timeout <s>` | `0` (off) | Per-iteration timeout; kills agent after `<s>` seconds (requires `timeout` from GNU coreutils; on macOS: `brew install coreutils`) |
 | `--stop-regex <pattern>` | `^COMPLETE:\s*true$` (or `$STOP_REGEX`) | Regex that triggers a successful stop |
 | `--dry-run` | off | Print configuration and exit without running |
 | `--resume` | off | Resume from last saved iteration (`.ralph/iteration.txt`) |
