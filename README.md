@@ -44,10 +44,13 @@ The `--` separator is **required** to distinguish ralph flags from the agent com
 |---|---|---|
 | `--max-iterations <n>` | `5` | Maximum number of loop iterations |
 | `--delay <s>` | `2` (or `$RALPH_DELAY`) | Pause between iterations in seconds |
+| `--timeout <s>` | `0` (off) | Per-iteration timeout; kills agent after `<s>` seconds |
 | `--stop-regex <pattern>` | `^COMPLETE:\s*true$` (or `$STOP_REGEX`) | Regex that triggers a successful stop |
 | `--dry-run` | off | Print configuration and exit without running |
 | `--resume` | off | Resume from last saved iteration (`.ralph/iteration.txt`) |
 | `--worktree` | off | Run the agent inside an isolated Git worktree |
+| `--action-inbox` | off | Pause when agent outputs `ACTION_REQUIRED: <msg>`; wait for user input |
+| `--inbox-timeout <s>` | `0` (unlimited) | Timeout for user input prompt (requires `--action-inbox`) |
 | `--goal <text>` | – | Project goal – fills `{{GOAL}}` in `PROMPT_TEMPLATE.md` |
 | `--stack <text>` | – | Tech stack – fills `{{STACK}}` in `PROMPT_TEMPLATE.md` |
 | `--prompt-file <path>` | – | Use a ready-made prompt file (overrides `--goal`/`--stack`) |
@@ -101,6 +104,44 @@ The agent only needs to output `COMPLETE: true` on its own line when all tasks a
 - Worktree path: `.ralph/worktrees/<timestamp>/`
 - Branch: `ralph/run-<timestamp>`
 - Logs and state are stored inside the worktree
+
+---
+
+## Action Inbox
+
+Enable `--action-inbox` to let the agent pause the loop and ask you a question mid-run.
+
+When the agent outputs a line starting with `ACTION_REQUIRED:`, ralph stops the loop, shows the message, and waits for your typed response. The response is written to `.ralph/inbox-response.txt` so the agent can read it on the next iteration.
+
+```bash
+./ralph.sh --action-inbox 10 -- claude -p @.ralph/PROMPT.md
+```
+
+**Agent side** – the agent emits the signal like this:
+
+```
+ACTION_REQUIRED: Which database should I use – SQLite or PostgreSQL?
+```
+
+**User side** – ralph pauses and prompts:
+
+```
+📬 Action Inbox – Agent wartet auf Eingabe:
+   Which database should I use – SQLite or PostgreSQL?
+
+Deine Antwort: SQLite please
+✅ Antwort gespeichert in .ralph/inbox-response.txt
+```
+
+On the next iteration the agent reads `.ralph/inbox-response.txt` and continues.
+
+### Optional timeout
+
+Use `--inbox-timeout <s>` to automatically continue if no input is received within the given number of seconds. If the timeout fires, an empty response is written and the loop continues.
+
+```bash
+./ralph.sh --action-inbox --inbox-timeout 60 10 -- claude -p @.ralph/PROMPT.md
+```
 
 ---
 
@@ -183,6 +224,7 @@ PROMPT_TEMPLATE.md    # Optional: custom template with {{GOAL}} and {{STACK}} (o
   iteration.txt       # Current iteration (for --resume)
   last-output.txt     # Last agent output
   ralph.log           # Full run log
+  inbox-response.txt  # User response written by --action-inbox
   worktrees/          # Isolated worktrees (--worktree)
 ```
 
@@ -195,6 +237,7 @@ See the [`examples/`](examples/) directory:
 - [`basic.sh`](examples/basic.sh) – Simple run with a fixed iteration count
 - [`with-prompt.sh`](examples/with-prompt.sh) – Using `--goal` and `--stack` for auto-generated prompts
 - [`with-worktree.sh`](examples/with-worktree.sh) – Isolated Git worktree run
+- [`with-action-inbox.sh`](examples/with-action-inbox.sh) – Interactive Action Inbox pause-and-approve
 
 ---
 

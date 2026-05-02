@@ -19,6 +19,9 @@ Optionen:
   --max-iterations <n>     Maximale Anzahl Iterationen (Alias für Positionsargument)
   --timeout <s>            Pro-Iteration-Timeout in Sekunden; Agent wird nach <s>s abgebrochen (0 = deaktiviert)
   --stop-regex <pattern>   Regex zum Erkennen des Stopp-Signals (Standard: STOP_REGEX oder ^COMPLETE:...)
+  --action-inbox           Pausiere den Loop wenn der Agent "ACTION_REQUIRED: <msg>" ausgibt;
+                           warte auf Benutzer-Eingabe und schreibe sie nach .ralph/inbox-response.txt
+  --inbox-timeout <s>      Timeout für die Benutzer-Eingabe in Sekunden (0 = unbegrenzt, Standard: 0)
   --dry-run                Konfiguration ausgeben, ohne den Befehl auszuführen; exit 0
   --resume                 Bei der zuletzt gespeicherten Iteration weitermachen (.ralph/iteration.txt)
   --worktree               Isolierten Git Worktree für diesen Run erstellen (Branch: ralph/run-<ts>)
@@ -44,6 +47,8 @@ Beispiel:
   ./ralph.sh --worktree 5 -- claude -p @{PROMPT_FILE}
   ./ralph.sh --goal "Baue eine REST API" --stack "Node.js, Express" 5 -- claude -p @{PROMPT_FILE}
   ./ralph.sh --timeout 120 5 -- claude -p @{PROMPT_FILE}
+  ./ralph.sh --action-inbox 5 -- claude -p @{PROMPT_FILE}
+  ./ralph.sh --action-inbox --inbox-timeout 120 5 -- claude -p @{PROMPT_FILE}
 
 Hinweis:
   Standardmäßig stoppt der Loop bei einer Zeile wie:
@@ -58,6 +63,8 @@ TIMEOUT=0
 DRY_RUN=0
 RESUME=0
 WORKTREE=0
+ACTION_INBOX=0
+INBOX_TIMEOUT=0
 STOP_REGEX_ARG=""
 GOAL=""
 STACK=""
@@ -110,6 +117,16 @@ while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
     --worktree)
       WORKTREE=1; shift
       ;;
+    --action-inbox)
+      ACTION_INBOX=1; shift
+      ;;
+    --inbox-timeout)
+      [[ -z "${2:-}" ]] && { echo "Fehler: --inbox-timeout benötigt einen Wert."; exit 1; }
+      INBOX_TIMEOUT="$2"; shift 2
+      ;;
+    --inbox-timeout=*)
+      INBOX_TIMEOUT="${1#*=}"; shift
+      ;;
     --goal)
       [[ -z "${2:-}" ]] && { echo "Fehler: --goal benötigt einen Wert."; exit 1; }
       GOAL="$2"; shift 2
@@ -156,6 +173,11 @@ fi
 
 if ! [[ "$TIMEOUT" =~ ^[0-9]+$ ]]; then
   echo "Fehler: timeout muss eine nicht-negative ganze Zahl sein."
+  exit 1
+fi
+
+if ! [[ "$INBOX_TIMEOUT" =~ ^[0-9]+$ ]]; then
+  echo "Fehler: inbox-timeout muss eine nicht-negative ganze Zahl sein."
   exit 1
 fi
 
@@ -267,6 +289,7 @@ if [[ $DRY_RUN -eq 1 ]]; then
   echo "- Stop-Regex:  $STOP_REGEX"
   echo "- Resume:      $( [[ $RESUME -eq 1 ]] && echo 'ja' || echo 'nein' )"
   echo "- Worktree:    $( [[ $WORKTREE -eq 1 ]] && echo 'ja' || echo 'nein' )"
+  echo "- Action-Inbox: $( [[ $ACTION_INBOX -eq 1 ]] && echo "ja (timeout: $( [[ $INBOX_TIMEOUT -gt 0 ]] && echo "${INBOX_TIMEOUT}s" || echo 'unbegrenzt' ))" || echo 'nein' )"
   if [[ -n "$EFFECTIVE_PROMPT_FILE" ]]; then
     if [[ -n "$PROMPT_FILE_OVERRIDE" ]]; then
       echo "- Prompt-Datei: $EFFECTIVE_PROMPT_FILE (--prompt-file)"
@@ -286,6 +309,7 @@ mkdir -p "$RALPH_DIR"
 LOG_FILE="$RALPH_DIR/ralph.log"
 LAST_OUTPUT_FILE="$RALPH_DIR/last-output.txt"
 ITERATION_FILE="$RALPH_DIR/iteration.txt"
+INBOX_RESPONSE_FILE="$RALPH_DIR/inbox-response.txt"
 mkdir -p "$RALPH_DIR"
 
 # Git Worktree Isolation
@@ -320,6 +344,7 @@ if [[ $WORKTREE -eq 1 ]]; then
   LOG_FILE="$WT_RALPH_DIR/ralph.log"
   LAST_OUTPUT_FILE="$WT_RALPH_DIR/last-output.txt"
   ITERATION_FILE="$WT_RALPH_DIR/iteration.txt"
+  INBOX_RESPONSE_FILE="$WT_RALPH_DIR/inbox-response.txt"
   # Change to worktree directory for the agent run
   cd "$WORKTREE_PATH"
 fi
@@ -340,6 +365,7 @@ printf '  %-18s %s\n' "Timeout:"      "$( [[ $TIMEOUT -gt 0 ]] && echo "${TIMEOU
 printf '  %-18s %s\n' "Stop-Regex:"   "$STOP_REGEX"
 printf '  %-18s %s\n' "Resume:"       "$( [[ $RESUME -eq 1 ]] && echo 'ja' || echo 'nein' )"
 printf '  %-18s %s\n' "Worktree:"     "$( [[ $WORKTREE -eq 1 ]] && echo "$WORKTREE_PATH" || echo 'nein' )"
+printf '  %-18s %s\n' "Action-Inbox:" "$( [[ $ACTION_INBOX -eq 1 ]] && echo "ja (timeout: $( [[ $INBOX_TIMEOUT -gt 0 ]] && echo "${INBOX_TIMEOUT}s" || echo 'unbegrenzt' ))" || echo 'nein' )"
 printf '  %-18s %s\n' "Log-Datei:"    "$LOG_FILE"
 if [[ -n "$EFFECTIVE_PROMPT_FILE" ]]; then
   if [[ -n "$PROMPT_FILE_OVERRIDE" ]]; then
@@ -384,6 +410,29 @@ while [[ $i -le $ITERATIONS ]]; do
   if grep -Eiq "$STOP_REGEX" "$LAST_OUTPUT_FILE"; then
     echo "✅ Stopp-Bedingung erfüllt in Iteration $i"
     exit 0
+  fi
+
+  if [[ $ACTION_INBOX -eq 1 ]]; then
+    ACTION_LINE="$(grep -Eo 'ACTION_REQUIRED:[[:space:]]*.*' "$LAST_OUTPUT_FILE" | head -1 || true)"
+    if [[ -n "$ACTION_LINE" ]]; then
+      ACTION_MSG="${ACTION_LINE#ACTION_REQUIRED:}"
+      ACTION_MSG="${ACTION_MSG#"${ACTION_MSG%%[![:space:]]*}"}"
+      echo ""
+      echo "📬 Action Inbox – Agent wartet auf Eingabe:"
+      echo "   $ACTION_MSG"
+      echo ""
+      if [[ $INBOX_TIMEOUT -gt 0 ]]; then
+        read -rp "Deine Antwort (${INBOX_TIMEOUT}s Timeout): " -t "$INBOX_TIMEOUT" USER_RESPONSE || {
+          echo ""
+          echo "⏱️ Timeout – keine Eingabe erhalten. Loop wird ohne Antwort fortgesetzt."
+          USER_RESPONSE=""
+        }
+      else
+        read -rp "Deine Antwort: " USER_RESPONSE
+      fi
+      echo "$USER_RESPONSE" > "$INBOX_RESPONSE_FILE"
+      echo "✅ Antwort gespeichert in $INBOX_RESPONSE_FILE"
+    fi
   fi
 
   ((i++))

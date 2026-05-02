@@ -5,3 +5,9 @@
 - README.md: updated PROMPT Integration section and File Layout; documents no external file required
 - tasks.md / progress.txt: created; task 1.1-1.4 marked done
 - Verification: dry-run with/without external PROMPT_TEMPLATE.md confirmed; bash -n syntax OK
+
+[2026-05-02] Iteration 2: Task "Action Inbox"
+- ralph.sh: added --action-inbox and --inbox-timeout flags; ACTION_REQUIRED detection in loop; response written to .ralph/inbox-response.txt
+- README.md: added Action Inbox section with examples; updated options table and file layout
+- examples/with-action-inbox.sh: created
+- Verification: bash -n OK; dry-run tests confirmed correct output for --action-inbox and --inbox-timeout flags; grep pattern confirmed

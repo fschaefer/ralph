@@ -13,12 +13,12 @@
 - [x] Update README: document that no external template file is required
 
 ### 2. Action Inbox (pause-and-approve)
-- [ ] Add `--action-inbox` flag to ralph.sh
-- [ ] Detect `ACTION_REQUIRED: <message>` line in agent output
-- [ ] Pause loop, display message, prompt user for response (with optional timeout)
-- [ ] Write user response to `.ralph/inbox-response.txt` so the agent can read it next iteration
-- [ ] Update README with Action Inbox documentation
-- [ ] Add `examples/with-action-inbox.sh`
+- [x] Add `--action-inbox` flag to ralph.sh
+- [x] Detect `ACTION_REQUIRED: <message>` line in agent output
+- [x] Pause loop, display message, prompt user for response (with optional timeout)
+- [x] Write user response to `.ralph/inbox-response.txt` so the agent can read it next iteration
+- [x] Update README with Action Inbox documentation
+- [x] Add `examples/with-action-inbox.sh`
 
 ### 3. Run Summary
 - [ ] Track wall-clock start time of the run
@@ -42,5 +42,7 @@
 - [ ] Update README
 
 ### 7. Documentation & Examples
+- [ ] Translate all to english
 - [ ] Update README to cover all new features with examples
 - [ ] Ensure all examples are consistent with new features
+- [ ] Cleanup folder

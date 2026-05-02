@@ -1,115 +1,109 @@
 ● Read PROMPT.md
   └ 65 lines read
 
-● Check project state (shell)
-  │ cd /Users/florians/Projekte/ralph && ls -la && cat tasks.md 2>/dev/null ||
-  │ echo "NO_TASKS_MD" && cat progress.txt 2>/dev/null || echo "NO_PROGRESS_TXT"
-  └ 14 lines...
+● Check project state - tasks.md and progress.txt (shell)
+  │ ls /Users/florians/Projekte/ralph/ && echo "---" && cat
+  │ /Users/florians/Projekte/ralph/tasks.md 2>/dev/null || echo "tasks.md NOT
+  │ FOUND" && echo "---" && cat /Users/florians/Projekte/ralph/progress.txt
+  │ 2>/dev/null || echo "progress.txt NOT FOUND"
+  └ 60 lines...
 
-Iteration 1. Let me explore the project and the reference repo before creating tasks.
-
-● Check examples and .ralph dir (shell)
-  │ ls /Users/florians/Projekte/ralph/examples/ && ls
-  │ /Users/florians/Projekte/ralph/.ralph/
-  └ 3 lines...
-
-● Read existing project files (shell)
-  │ cd /Users/florians/Projekte/ralph && cat ralph.sh && echo
-  │ "---PROMPT_TEMPLATE---" && cat PROMPT_TEMPLATE.md && echo "---README---" &&
-  │ cat README.md
-  └ 570 lines...
-
-Now let me explore wiggum-cli for features to integrate:
-
-● Check example files (shell)
-  │ cd /Users/florians/Projekte/ralph && cat examples/basic.sh
-  │ examples/with-prompt.sh examples/with-worktree.sh
-  └ 53 lines...
-
-● Fetching web content https://github.com/federiconeri/wiggum-cli · url: "https://github.com/federi…
-  └ Contents of https://github.com/federiconeri/wiggum-cli:
-
-Good picture of the project. Now I'll create tasks.md, progress.txt, and implement the first task (embed PROMPT_TEMPLATE in the script).
-
-● Create tasks.md +47
-
-● Create progress.txt +2
-
-Now implement Task 1: embed the PROMPT_TEMPLATE as a heredoc fallback inside `ralph.sh`.
-
-● Read PROMPT_TEMPLATE.md
-  └ 55 lines read
-
-Now I'll add the embedded template fallback to `ralph.sh`:
+● Read README.md
+  └ 203 lines read
 
 ● Read ralph.sh
-  └ L1:50 (50 lines read)
+  └ 394 lines read
 
-● Read ralph.sh
-  └ L51:100 (50 lines read)
+● List directory examples
+  └ 3 files found
 
-● Read ralph.sh
-  └ L155:215 (61 lines read)
+**SCHRITT 2:** Next task is the **Action Inbox** (section 2 – all subtasks form one coherent feature). Implementing now.
 
-Now I'll make the changes to `ralph.sh`:
+● Edit ralph.sh +3
 
-● Edit ralph.sh +2 -2
+● Edit ralph.sh +2
 
-● Edit ralph.sh +3 -1
+Now add the variables and flag parsing:
 
-Now add the embedded template and update the template resolution logic:
+● Edit ralph.sh +2
 
-● Edit ralph.sh +71 -8
+● Edit ralph.sh +10
 
-Now update the dry-run output to show the template source:
+Add validation for INBOX_TIMEOUT and update dry-run and config header:
 
-● Edit ralph.sh +9 -1
+● Edit ralph.sh +5
 
-Now also update the config header in the main loop to indicate the template source:
+Now update dry-run output to include Action Inbox info:
 
-● Read ralph.sh
-  └ L280:320 (41 lines read)
+● Edit ralph.sh +1
 
-● Read ralph.sh
-  └ L320:380 (60 lines read)
+Now update the config header:
 
-● Edit ralph.sh +9 -1
+● Edit ralph.sh +1
 
-Now verify the changes work correctly:
+Now add the inbox response file variable and the Action Inbox logic in the main loop:
 
-● Verify embedded template fallback works (shell)
-  │ cd /Users/florians/Projekte/ralph
+● Edit ralph.sh +1
+
+Also update the worktree section to redirect the inbox file:
+
+● Edit ralph.sh +1
+
+Now add the Action Inbox detection logic in the main loop, right after the stop-condition check:
+
+● Edit ralph.sh +23
+
+Now update the README and create the example file:
+
+● Edit README.md +3
+
+Now add the Action Inbox section to the README, after the Worktree section:
+
+● Edit README.md +38
+
+Now update the File Layout section in README:
+
+● Edit README.md +1
+
+Now update the Examples list in README:
+
+● Edit README.md +1
+
+Now create the example file:
+
+● Create with-action-inbox.sh +30
+  └ examples/with-action-inbox.sh
+
+● Verify ralph.sh syntax (shell)
+  │ chmod +x /Users/florians/Projekte/ralph/examples/with-action-inbox.sh &&
+  │ bash -n /Users/florians/Projekte/ralph/ralph.sh && echo "Syntax OK"
+  └ 2 lines...
+
+● Dry-run test with action-inbox flag (shell)
+  │ cd /Users/florians/Projekte/ralph && ./ralph.sh --action-inbox --dry-run 3
+  │ -- echo test
+  └ 10 lines...
+
+● Dry-run with inbox-timeout (shell)
+  │ cd /Users/florians/Projekte/ralph && ./ralph.sh --action-inbox
+  │ --inbox-timeout 30 --dry-run 3 -- echo test
+  └ 10 lines...
+
+● Test ACTION_REQUIRED grep pattern (shell)
+  │ cd /Users/florians/Projekte/ralph && echo 'ACTION_REQUIRED: which db should
+  │ I use?' > /tmp/test-output.txt && grep -Eo 'ACTION_REQUIRED:[[:space:]]*.*'
+  │ /tmp/test-output.txt | head -1
+  └ 2 lines...
+
+All working. Now update tasks.md and progress.txt, then commit:
+
+● Edit tasks.md +6 -6
+
+● Append to progress.txt (shell)
+  │ cat >> /Users/florians/Projekte/ralph/progress.txt << 'EOF'
   │
-  │ # Test 1: dry-run with --goal uses embedded template (no
-  │ PROMPT_TEMPLATE.md present temporarily)
-  │ mv PROMPT_TEMPLATE.md PROMPT_TEMPLATE.md.bak…
-  └ 33 lines...
-
-● Check generated prompt content from embedded template (shell)
-  │ cd /Users/florians/Projekte/ralph
-  │
-  │ # Test 4: verify the generated .ralph/PROMPT.md content when no external
-  │ template
-  │ mv PROMPT_TEMPLATE.md PROMPT_TEMPLATE.md.bak…
-  └ 29 lines...
-
-The embedded template works perfectly. Now update the README to reflect this:
-
-● Edit README.md +6 -2
-
-Also update the File Layout section in README:
-
-● Edit README.md +2 -2
-
-Now update tasks.md (mark done) and progress.txt, then commit:
-
-● Edit tasks.md +4 -4
-
-● Update progress.txt (shell)
-  │ cd /Users/florians/Projekte/ralph
-  │ cat >> progress.txt <<'EOF'
-  │
-  │ [2026-05-02] Iteration 1: Task "Embed PROMPT_TEMPLATE in script"
-  │ - ralph.sh: added EMBEDDED_PROMPT_TEMPLATE heredoc; template-resolution …
+  │ [2026-05-02] Iteration 2: Task "Action Inbox"
+  │ - ralph.sh: added --action-inbox and --inbox-timeout flags;
+  │ ACTION_REQUIRED detection in loop; response written to …
   └ 8 lines...
 
