@@ -101,3 +101,65 @@ Now verify with `bash -n`:
   │ EFFECTIVE_PROMPT_FILE; {SPEC_FILE} placeholder substituted in CMD …
   └ 7 lines...
 
+● Git commit (shell)
+  │ cd /Users/florians/Projekte/ralph && git add -A && git commit -m "ralph:
+  │ task update
+  │
+  │ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+  └ 3 lines...
+
+Committed. Remaining open tasks:
+
+- **§6 Quiet Mode** (`--quiet`/`-q`, update README)
+- **§7 Docs & Examples** (translate to English, update README, cleanup, use `github.com/fschaefer/ralph`)
+
+Next task: **Quiet Mode**.
+
+● Edit ralph.sh +1
+
+● Edit ralph.sh +3
+
+Add `--quiet` to usage:
+
+● Edit ralph.sh +1
+
+Now wrap the config header and iteration banners with the quiet check:
+
+● Edit ralph.sh +23 -21
+
+Now wrap the iteration banners:
+
+● Edit ralph.sh +6
+
+Find and remove the duplicate banner that's before the iteration file write:
+
+● Read ralph.sh
+  └ L475:510 (36 lines read)
+
+I see there's a duplicate banner. Let me fix that:
+
+● Edit ralph.sh -4
+
+Now update README with quiet mode:
+
+● Edit README.md +1
+
+Verify syntax and test quiet mode:
+
+● Verify syntax and quiet dry-run (shell)
+  │ cd /Users/florians/Projekte/ralph && bash -n ralph.sh && echo "Syntax OK" &&
+  │ ./ralph.sh --quiet --dry-run 3 -- echo hello 2>&1
+  └ 11 lines...
+
+Now update tasks.md and progress.txt:
+
+● Edit tasks.md +2 -2
+
+● Append progress (shell)
+  │ cat >> /Users/florians/Projekte/ralph/progress.txt << 'EOF'
+  │
+  │ [2026-05-02] Iteration 6: Task "Quiet Mode"
+  │ - ralph.sh: added QUIET flag; -q/--quiet flag; config header and iteration
+  │ banners wrapped with [[ $QUIET -eq 0 ]]…
+  └ 5 lines...
+

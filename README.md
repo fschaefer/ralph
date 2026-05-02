@@ -52,6 +52,7 @@ The `--` separator is **required** to distinguish ralph flags from the agent com
 | `--action-inbox` | off | Pause when agent outputs `ACTION_REQUIRED: <msg>`; wait for user input |
 | `--inbox-timeout <s>` | `0` (unlimited) | Timeout for user input prompt (requires `--action-inbox`) |
 | `--monitor` | off | Tail `.ralph/ralph.log` in real-time (open in a second terminal) |
+| `--quiet`, `-q` | off | Suppress config header and iteration banners |
 | `--goal <text>` | – | Project goal – fills `{{GOAL}}` in `PROMPT_TEMPLATE.md` |
 | `--stack <text>` | – | Tech stack – fills `{{STACK}}` in `PROMPT_TEMPLATE.md` |
 | `--prompt-file <path>` | – | Use a ready-made prompt file (overrides `--goal`/`--stack`) |

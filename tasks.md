@@ -38,8 +38,8 @@
 - [x] Update README with specs documentation
 
 ### 6. Quiet Mode
-- [ ] Add `--quiet` / `-q` flag to suppress config header and iteration banners
-- [ ] Update README
+- [x] Add `--quiet` / `-q` flag to suppress config header and iteration banners
+- [x] Update README
 
 ### 7. Documentation & Examples
 - [ ] Translate all to english

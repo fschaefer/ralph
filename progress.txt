@@ -27,3 +27,8 @@
 - ralph.sh: added --spec <name> flag; loads .ralph/specs/<name>.md as EFFECTIVE_PROMPT_FILE; {SPEC_FILE} placeholder substituted in CMD (alongside {PROMPT_FILE}); spec shown in dry-run and config header
 - README.md: added --spec row to options table; added "Multiple Specs" section; updated File Layout
 - Verification: bash -n OK; dry-run with missing spec shows correct error; dry-run with existing spec shows correct path substitution
+
+[2026-05-02] Iteration 6: Task "Quiet Mode"
+- ralph.sh: added QUIET flag; -q/--quiet flag; config header and iteration banners wrapped with [[ $QUIET -eq 0 ]]
+- README.md: added --quiet row to options table
+- Verification: bash -n OK; --quiet --dry-run shows no banner suppression (dry-run intentionally always shows config)

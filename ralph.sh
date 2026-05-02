@@ -23,6 +23,7 @@ Optionen:
                            warte auf Benutzer-Eingabe und schreibe sie nach .ralph/inbox-response.txt
   --inbox-timeout <s>      Timeout für die Benutzer-Eingabe in Sekunden (0 = unbegrenzt, Standard: 0)
   --monitor                Zeige den Live-Log des laufenden Runs (tail -f .ralph/ralph.log)
+  --quiet, -q              Unterdrücke Konfigurations-Header und Iterations-Banner
   --dry-run                Konfiguration ausgeben, ohne den Befehl auszuführen; exit 0
   --resume                 Bei der zuletzt gespeicherten Iteration weitermachen (.ralph/iteration.txt)
   --worktree               Isolierten Git Worktree für diesen Run erstellen (Branch: ralph/run-<ts>)
@@ -71,6 +72,7 @@ WORKTREE=0
 ACTION_INBOX=0
 INBOX_TIMEOUT=0
 MONITOR=0
+QUIET=0
 STOP_REGEX_ARG=""
 GOAL=""
 STACK=""
@@ -89,6 +91,9 @@ while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
       ;;
     --monitor)
       MONITOR=1; shift
+      ;;
+    -q|--quiet)
+      QUIET=1; shift
       ;;
     --delay)
       [[ -z "${2:-}" ]] && { echo "Fehler: --delay benötigt einen Wert."; exit 1; }
@@ -441,38 +446,42 @@ if [[ $RESUME -eq 1 && -f "$ITERATION_FILE" ]]; then
   fi
 fi
 
-printf '%s\n' "--- Ralph Konfiguration ---"
-printf '  %-18s %s\n' "Iterationen:"  "$ITERATIONS"
-printf '  %-18s %s\n' "Delay:"        "${DELAY}s"
-printf '  %-18s %s\n' "Timeout:"      "$( [[ $TIMEOUT -gt 0 ]] && echo "${TIMEOUT}s" || echo 'deaktiviert' )"
-printf '  %-18s %s\n' "Stop-Regex:"   "$STOP_REGEX"
-printf '  %-18s %s\n' "Resume:"       "$( [[ $RESUME -eq 1 ]] && echo 'ja' || echo 'nein' )"
-printf '  %-18s %s\n' "Worktree:"     "$( [[ $WORKTREE -eq 1 ]] && echo "$WORKTREE_PATH" || echo 'nein' )"
-printf '  %-18s %s\n' "Action-Inbox:" "$( [[ $ACTION_INBOX -eq 1 ]] && echo "ja (timeout: $( [[ $INBOX_TIMEOUT -gt 0 ]] && echo "${INBOX_TIMEOUT}s" || echo 'unbegrenzt' ))" || echo 'nein' )"
-printf '  %-18s %s\n' "Log-Datei:"    "$LOG_FILE"
-if [[ -n "$EFFECTIVE_PROMPT_FILE" ]]; then
-  if [[ -n "$PROMPT_FILE_OVERRIDE" ]]; then
-    printf '  %-18s %s\n' "Prompt-Datei:" "$EFFECTIVE_PROMPT_FILE (--prompt-file)"
-  elif [[ -n "$SPEC_NAME" ]]; then
-    printf '  %-18s %s\n' "Prompt-Datei:" "$EFFECTIVE_PROMPT_FILE (--spec $SPEC_NAME)"
-  elif [[ -f "PROMPT_TEMPLATE.md" ]]; then
-    printf '  %-18s %s\n' "Prompt-Datei:" "$EFFECTIVE_PROMPT_FILE (aus PROMPT_TEMPLATE.md)"
-  else
-    printf '  %-18s %s\n' "Prompt-Datei:" "$EFFECTIVE_PROMPT_FILE (eingebettetes Template)"
+if [[ $QUIET -eq 0 ]]; then
+  printf '%s\n' "--- Ralph Konfiguration ---"
+  printf '  %-18s %s\n' "Iterationen:"  "$ITERATIONS"
+  printf '  %-18s %s\n' "Delay:"        "${DELAY}s"
+  printf '  %-18s %s\n' "Timeout:"      "$( [[ $TIMEOUT -gt 0 ]] && echo "${TIMEOUT}s" || echo 'deaktiviert' )"
+  printf '  %-18s %s\n' "Stop-Regex:"   "$STOP_REGEX"
+  printf '  %-18s %s\n' "Resume:"       "$( [[ $RESUME -eq 1 ]] && echo 'ja' || echo 'nein' )"
+  printf '  %-18s %s\n' "Worktree:"     "$( [[ $WORKTREE -eq 1 ]] && echo "$WORKTREE_PATH" || echo 'nein' )"
+  printf '  %-18s %s\n' "Action-Inbox:" "$( [[ $ACTION_INBOX -eq 1 ]] && echo "ja (timeout: $( [[ $INBOX_TIMEOUT -gt 0 ]] && echo "${INBOX_TIMEOUT}s" || echo 'unbegrenzt' ))" || echo 'nein' )"
+  printf '  %-18s %s\n' "Log-Datei:"    "$LOG_FILE"
+  if [[ -n "$EFFECTIVE_PROMPT_FILE" ]]; then
+    if [[ -n "$PROMPT_FILE_OVERRIDE" ]]; then
+      printf '  %-18s %s\n' "Prompt-Datei:" "$EFFECTIVE_PROMPT_FILE (--prompt-file)"
+    elif [[ -n "$SPEC_NAME" ]]; then
+      printf '  %-18s %s\n' "Prompt-Datei:" "$EFFECTIVE_PROMPT_FILE (--spec $SPEC_NAME)"
+    elif [[ -f "PROMPT_TEMPLATE.md" ]]; then
+      printf '  %-18s %s\n' "Prompt-Datei:" "$EFFECTIVE_PROMPT_FILE (aus PROMPT_TEMPLATE.md)"
+    else
+      printf '  %-18s %s\n' "Prompt-Datei:" "$EFFECTIVE_PROMPT_FILE (eingebettetes Template)"
+    fi
   fi
+  printf '  Kommando:          '
+  printf '%s ' "${CMD[@]}"; echo
+  echo ""
 fi
-printf '  Kommando:          '
-printf '%s ' "${CMD[@]}"; echo
-echo ""
 
 RUN_START_TS=$(date +%s)
 
 while [[ $i -le $ITERATIONS ]]; do
-  echo "============================================================"
-  echo "Iteration $i/$ITERATIONS"
-  echo "============================================================"
-
   echo "$i" > "$ITERATION_FILE"
+
+  if [[ $QUIET -eq 0 ]]; then
+    echo "============================================================"
+    echo "Iteration $i/$ITERATIONS"
+    echo "============================================================"
+  fi
 
   set +e
   "${CMD[@]}" 2>&1 | tee "$LAST_OUTPUT_FILE"
