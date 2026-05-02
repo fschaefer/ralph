@@ -55,6 +55,7 @@ The `--` separator is **required** to distinguish ralph flags from the agent com
 | `--goal <text>` | – | Project goal – fills `{{GOAL}}` in `PROMPT_TEMPLATE.md` |
 | `--stack <text>` | – | Tech stack – fills `{{STACK}}` in `PROMPT_TEMPLATE.md` |
 | `--prompt-file <path>` | – | Use a ready-made prompt file (overrides `--goal`/`--stack`) |
+| `--spec <name>` | – | Load `.ralph/specs/<name>.md` as prompt; use `{SPEC_FILE}` in the agent command |
 | `-h`, `--help` | – | Show help and exit |
 
 ---
@@ -90,6 +91,25 @@ You can also provide a hand-crafted prompt file directly:
 ### Minimal prompt for the agent
 
 The agent only needs to output `COMPLETE: true` on its own line when all tasks are done. Everything else – task tracking, progress log, git commits – is managed by the agent itself via `tasks.md` and `progress.txt` (as defined in the built-in template).
+
+---
+
+## Multiple Specs
+
+Store reusable task-specific prompts in `.ralph/specs/` and load them with `--spec <name>`:
+
+```bash
+# Create specs directory and a spec
+mkdir -p .ralph/specs
+cp my-feature-prompt.md .ralph/specs/auth.md
+
+# Run with the spec
+./ralph.sh --spec auth 10 -- claude -p @{SPEC_FILE}
+```
+
+- `--spec auth` loads `.ralph/specs/auth.md`
+- Use `{SPEC_FILE}` anywhere in your agent command as a placeholder for the spec file path
+- The spec file is used as-is (no template substitution); for template substitution use `--goal`/`--stack` instead
 
 ---
 
@@ -242,6 +262,8 @@ PROMPT_TEMPLATE.md    # Optional: custom template with {{GOAL}} and {{STACK}} (o
   last-output.txt     # Last agent output
   ralph.log           # Full run log
   inbox-response.txt  # User response written by --action-inbox
+  specs/              # Named spec files (for --spec)
+    <name>.md
   worktrees/          # Isolated worktrees (--worktree)
 ```
 

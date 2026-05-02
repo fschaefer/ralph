@@ -33,9 +33,9 @@
 - [x] Add `examples/monitor.sh`
 
 ### 5. Multiple Specs Support
-- [ ] Add `--spec <name>` flag: load `.ralph/specs/<name>.md` as prompt
-- [ ] Auto-substitute `{SPEC_FILE}` placeholder in agent command
-- [ ] Update README with specs documentation
+- [x] Add `--spec <name>` flag: load `.ralph/specs/<name>.md` as prompt
+- [x] Auto-substitute `{SPEC_FILE}` placeholder in agent command
+- [x] Update README with specs documentation
 
 ### 6. Quiet Mode
 - [ ] Add `--quiet` / `-q` flag to suppress config header and iteration banners
@@ -47,3 +47,4 @@
 - [ ] Ensure all examples are consistent with new features
 - [ ] Cleanup folder
 - [ ] Use github.com/fschaefer/ralph
+- [ ] add to prompt that .ralph directory should be excluded in .gitignore if git is used

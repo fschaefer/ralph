@@ -29,6 +29,8 @@ Optionen:
   --goal <text>            Projektziel (befüllt {{GOAL}} im Prompt-Template → .ralph/PROMPT.md)
   --stack <text>           Technologie-Stack (befüllt {{STACK}} im Prompt-Template → .ralph/PROMPT.md)
   --prompt-file <path>     Fertigen Prompt direkt übergeben (überschreibt --goal/--stack)
+  --spec <name>            Lädt .ralph/specs/<name>.md als Prompt;
+                           verwende {SPEC_FILE} im Agent-Kommando als Platzhalter
   -v, --version            Versionsnummer ausgeben und beenden
 
 Prompt-Integration:
@@ -50,6 +52,7 @@ Beispiel:
   ./ralph.sh --timeout 120 5 -- claude -p @{PROMPT_FILE}
   ./ralph.sh --action-inbox 5 -- claude -p @{PROMPT_FILE}
   ./ralph.sh --action-inbox --inbox-timeout 120 5 -- claude -p @{PROMPT_FILE}
+  ./ralph.sh --spec myfeature 5 -- claude -p @{SPEC_FILE}
   ./ralph.sh --monitor        # in a second terminal while a run is active
 
 Hinweis:
@@ -72,6 +75,7 @@ STOP_REGEX_ARG=""
 GOAL=""
 STACK=""
 PROMPT_FILE_OVERRIDE=""
+SPEC_NAME=""
 
 # Parse named flags and optional positional iterations before '--'
 while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
@@ -153,6 +157,13 @@ while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
       ;;
     --prompt-file=*)
       PROMPT_FILE_OVERRIDE="${1#*=}"; shift
+      ;;
+    --spec)
+      [[ -z "${2:-}" ]] && { echo "Fehler: --spec benötigt einen Wert."; exit 1; }
+      SPEC_NAME="$2"; shift 2
+      ;;
+    --spec=*)
+      SPEC_NAME="${1#*=}"; shift
       ;;
     *)
       ITERATIONS="$1"; shift; break
@@ -287,6 +298,13 @@ EFFECTIVE_PROMPT_FILE=""
 
 if [[ -n "$PROMPT_FILE_OVERRIDE" ]]; then
   EFFECTIVE_PROMPT_FILE="$PROMPT_FILE_OVERRIDE"
+elif [[ -n "$SPEC_NAME" ]]; then
+  SPEC_FILE_PATH="$RALPH_DIR/specs/${SPEC_NAME}.md"
+  if [[ ! -f "$SPEC_FILE_PATH" ]]; then
+    echo "Fehler: Spec-Datei nicht gefunden: $SPEC_FILE_PATH"
+    exit 1
+  fi
+  EFFECTIVE_PROMPT_FILE="$SPEC_FILE_PATH"
 elif [[ -n "$GOAL" || -n "$STACK" ]]; then
   TEMPLATE_FILE="PROMPT_TEMPLATE.md"
   mkdir -p "$RALPH_DIR"
@@ -305,10 +323,11 @@ elif [[ -n "$GOAL" || -n "$STACK" ]]; then
   EFFECTIVE_PROMPT_FILE="$GENERATED_PROMPT_FILE"
 fi
 
-# Replace {PROMPT_FILE} placeholder in CMD args
+# Replace {PROMPT_FILE} and {SPEC_FILE} placeholders in CMD args
 if [[ -n "$EFFECTIVE_PROMPT_FILE" ]]; then
   for i in "${!CMD[@]}"; do
     CMD[$i]="${CMD[$i]//\{PROMPT_FILE\}/$EFFECTIVE_PROMPT_FILE}"
+    CMD[$i]="${CMD[$i]//\{SPEC_FILE\}/$EFFECTIVE_PROMPT_FILE}"
   done
 fi
 
@@ -324,6 +343,8 @@ if [[ $DRY_RUN -eq 1 ]]; then
   if [[ -n "$EFFECTIVE_PROMPT_FILE" ]]; then
     if [[ -n "$PROMPT_FILE_OVERRIDE" ]]; then
       echo "- Prompt-Datei: $EFFECTIVE_PROMPT_FILE (--prompt-file)"
+    elif [[ -n "$SPEC_NAME" ]]; then
+      echo "- Prompt-Datei: $EFFECTIVE_PROMPT_FILE (--spec $SPEC_NAME)"
     elif [[ -f "PROMPT_TEMPLATE.md" ]]; then
       echo "- Prompt-Datei: $EFFECTIVE_PROMPT_FILE (aus PROMPT_TEMPLATE.md)"
     else
@@ -432,6 +453,8 @@ printf '  %-18s %s\n' "Log-Datei:"    "$LOG_FILE"
 if [[ -n "$EFFECTIVE_PROMPT_FILE" ]]; then
   if [[ -n "$PROMPT_FILE_OVERRIDE" ]]; then
     printf '  %-18s %s\n' "Prompt-Datei:" "$EFFECTIVE_PROMPT_FILE (--prompt-file)"
+  elif [[ -n "$SPEC_NAME" ]]; then
+    printf '  %-18s %s\n' "Prompt-Datei:" "$EFFECTIVE_PROMPT_FILE (--spec $SPEC_NAME)"
   elif [[ -f "PROMPT_TEMPLATE.md" ]]; then
     printf '  %-18s %s\n' "Prompt-Datei:" "$EFFECTIVE_PROMPT_FILE (aus PROMPT_TEMPLATE.md)"
   else

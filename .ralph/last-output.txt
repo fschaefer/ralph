@@ -1,81 +1,103 @@
 ● Read PROMPT.md
   └ 65 lines read
 
-● Check project structure and state files (shell)
-  │ ls /Users/florians/Projekte/ralph/ && echo "---" && cat
-  │ /Users/florians/Projekte/ralph/tasks.md 2>/dev/null || echo "NO TASKS.MD" &&
-  │ echo "---" && cat /Users/florians/Projekte/ralph/progress.txt 2>/dev/null ||
-  │ echo "NO PROGRESS.TXT"
-  └ 71 lines...
+● List directory .
+  └ 10 files found
+
+● Read tasks.md
+  └ 49 lines read
+
+● Read progress.txt
+  └ 24 lines read
 
 ● Read ralph.sh
-  └ 490 lines read
+  └ 521 lines read
+
+● Read PROMPT_TEMPLATE.md
+  └ 55 lines read
 
 ● List directory examples
-  └ 4 files found
+  └ 5 files found
 
 ● Read README.md
-  └ 246 lines read
+  └ 264 lines read
 
-Now I'll implement **Monitor Mode** (task 4). The plan:
-- Add `--monitor` flag that tails `.ralph/ralph.log` in real-time  
-- Show current iteration from `.ralph/iteration.txt` as a status header
-- Update README and add `examples/monitor.sh`
+**Next task:** Multiple Specs Support (`--spec` flag). Implementing all 3 subtasks (flag, substitution, README).
 
-● Edit ralph.sh +4
+● Edit ralph.sh +7
 
-Now add the monitor handling right before the `--` separator check:
-
-● Edit ralph.sh +25
-
-Now add `--monitor` to the usage text and options table:
+Now add the `SPEC_NAME` variable initialization and update the prompt resolution logic:
 
 ● Edit ralph.sh +1
 
-Add monitor to examples in usage:
+Now add `--spec` to the usage text and update the prompt resolution section:
+
+● Edit ralph.sh +2
+
+Now add `--spec` to the usage examples:
 
 ● Edit ralph.sh +1
 
-Now create `examples/monitor.sh`:
+Now update the prompt resolution section to support `--spec`:
 
-● Create monitor.sh +16
-  └ examples/monitor.sh
+● Edit ralph.sh +7
 
-Now update README.md — add Monitor section and update the options table and examples list:
+Now add `{SPEC_FILE}` substitution alongside `{PROMPT_FILE}` in the CMD replacement loop:
+
+● Edit ralph.sh +2 -1
+
+Now update the dry-run and config header sections to show spec info:
+
+● Read ralph.sh
+  └ L325:360 (36 lines read)
+
+● Edit ralph.sh +2
+
+Now update the config header print section (for non-dry-run):
+
+● Read ralph.sh
+  └ L442:470 (29 lines read)
+
+● Edit ralph.sh +2
+
+Now update README.md with the `--spec` documentation:
 
 ● Edit README.md +1
 
-Now add the Monitor section to the README (after Action Inbox, before Resume):
+Now add a Specs section to the README, between PROMPT Integration and Worktree Isolation:
 
-● Edit README.md +16
+● Edit README.md +19
 
-Add monitor.sh to the examples list in README:
+Also update the File Layout section to show the specs directory:
 
-● Edit README.md +1
+● Edit README.md +2
 
-Now verify with `bash -n` and a quick dry-run test:
+Now verify with `bash -n`:
 
-● Syntax check ralph.sh (shell)
-  │ cd /Users/florians/Projekte/ralph && bash -n ralph.sh && echo "Syntax OK"
+● Bash syntax check (shell)
+  │ bash -n /Users/florians/Projekte/ralph/ralph.sh && echo "Syntax OK"
   └ 2 lines...
 
-● Dry-run test (shell)
-  │ cd /Users/florians/Projekte/ralph && bash ralph.sh --dry-run 3 -- echo test
-  └ 10 lines...
+● Dry-run spec flag test (shell)
+  │ cd /Users/florians/Projekte/ralph && ./ralph.sh --spec mytest --dry-run 3 --
+  │ claude -p @{SPEC_FILE} 2>&1 || true
+  └ 2 lines...
 
-● Test --monitor with no log file (shell)
-  │ cd /Users/florians/Projekte/ralph && bash ralph.sh --monitor 2>&1 | head -5
-  └ 6 lines...
+● Test --spec with existing file (shell)
+  │ cd /Users/florians/Projekte/ralph && mkdir -p .ralph/specs && echo "Test
+  │ spec content" > .ralph/specs/mytest.md && ./ralph.sh --spec mytest --dry-run
+  │ 3 -- claude -p @{SPEC_FILE} 2>&1
+  └ 11 lines...
 
-Monitor mode works correctly. Now update tasks.md and progress.txt:
+`{SPEC_FILE}` is correctly substituted. Now update tasks.md and progress.txt, then commit:
 
-● Edit tasks.md +4 -4
+● Edit tasks.md +3 -3
 
-● Append progress log entry (shell)
+● Append to progress.txt (shell)
   │ cat >> /Users/florians/Projekte/ralph/progress.txt << 'EOF'
   │
-  │ [2026-05-02] Iteration 4: Task "Monitor Mode"
-  │ - ralph.sh: added MONITOR flag; --monitor subcommand tails
-  │ .ralph/ralph.log with current iteration header; bypasses -- separator …
-  └ 8 lines...
+  │ [2026-05-02] Iteration 5: Task "Multiple Specs Support"
+  │ - ralph.sh: added --spec <name> flag; loads .ralph/specs/<name>.md as
+  │ EFFECTIVE_PROMPT_FILE; {SPEC_FILE} placeholder substituted in CMD …
+  └ 7 lines...
 

@@ -22,3 +22,8 @@
 - README.md: added Monitor Mode section; updated options table; added monitor.sh to examples list
 - examples/monitor.sh: created
 - Verification: bash -n OK; --dry-run OK; --monitor correctly shows header + tails log (or error when no log exists)
+
+[2026-05-02] Iteration 5: Task "Multiple Specs Support"
+- ralph.sh: added --spec <name> flag; loads .ralph/specs/<name>.md as EFFECTIVE_PROMPT_FILE; {SPEC_FILE} placeholder substituted in CMD (alongside {PROMPT_FILE}); spec shown in dry-run and config header
+- README.md: added --spec row to options table; added "Multiple Specs" section; updated File Layout
+- Verification: bash -n OK; dry-run with missing spec shows correct error; dry-run with existing spec shows correct path substitution
