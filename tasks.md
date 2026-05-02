@@ -1,28 +1,46 @@
-# ralph – Task-Checkliste
+# ralph – Task Checklist
 
-## Projekt-Ziel
-ralph.sh ist ein minimaler Bash-Loop-Runner für autonome KI-Coding-Agenten, inspiriert von wiggum-cli.
-Alle erreichbaren Features aus wiggum-cli sollen (soweit für ein Bash-Skript sinnvoll) integriert werden.
+## Setup
+- [x] Create tasks.md (this file)
+- [x] Create progress.txt
 
----
+## Features (inspired by wiggum-cli)
 
-## Erledigte Tasks (aus progress.txt)
+### 1. Embed PROMPT_TEMPLATE.md in script
+- [x] Add embedded default prompt template as heredoc inside ralph.sh
+- [x] Fall back to embedded template when PROMPT_TEMPLATE.md is not found on disk
+- [x] Keep external PROMPT_TEMPLATE.md working (takes priority over embedded)
+- [x] Update README: document that no external template file is required
 
-- [x] Projektstruktur: ralph.sh + PROMPT_TEMPLATE.md im Root, .gitignore für .ralph/
-- [x] PROMPT-Integration: --goal, --stack, --prompt-file Flags; PROMPT_TEMPLATE.md → .ralph/PROMPT.md; {PROMPT_FILE} Platzhalter
-- [x] --worktree: Isolierter Git Worktree für jeden Run
-- [x] Run Summary: git diff --stat HEAD nach jeder Iteration
-- [x] README.md: Vollständige Dokumentation
-- [x] examples/: basic.sh, with-prompt.sh, with-worktree.sh
-- [x] SIGINT-Trap, --delay, --dry-run, --resume, --max-iterations, --stop-regex, Config-Display
+### 2. Action Inbox (pause-and-approve)
+- [ ] Add `--action-inbox` flag to ralph.sh
+- [ ] Detect `ACTION_REQUIRED: <message>` line in agent output
+- [ ] Pause loop, display message, prompt user for response (with optional timeout)
+- [ ] Write user response to `.ralph/inbox-response.txt` so the agent can read it next iteration
+- [ ] Update README with Action Inbox documentation
+- [ ] Add `examples/with-action-inbox.sh`
 
----
+### 3. Run Summary
+- [ ] Track wall-clock start time of the run
+- [ ] Print elapsed total time at the end of the loop
+- [ ] Print per-iteration exit codes / status in summary
+- [ ] Print final outcome line (completed / max-iterations reached / interrupted)
 
-## Offene Tasks
+### 4. Monitor Mode
+- [ ] Add `--monitor` subcommand / flag: tail `.ralph/ralph.log` in real-time
+- [ ] Show current iteration counter alongside tailed output
+- [ ] Update README with monitor documentation
+- [ ] Add `examples/monitor.sh`
 
-- [x] --version Flag: Versionsnummer ausgeben und exit 0 (analog zu wiggum --version/-v)
-- [ ] --timeout <s>: Pro-Iteration-Timeout mit `timeout`-Befehl; Agent-Prozess nach <s> Sekunden abbrechen; Fehler loggen; Loop fortsetzen (wiggum hat per-loop timeouts)
-- [ ] SIGTERM-Trap: Neben SIGINT auch SIGTERM abfangen und sauber beenden (Cleanup wie bei SIGINT)
-- [ ] Worktree-Cleanup: Worktree nach erfolgreichem Run automatisch aufräumen; --keep-worktree Flag um altes Verhalten beizubehalten
-- [ ] {MODEL} Platzhalter in CMD-Args (analog zu {PROMPT_FILE}): --model <model> Flag; ersetzt {MODEL} im Agent-Kommando (z.B. `claude --model {MODEL} -p @{PROMPT_FILE}`)
-- [ ] README + examples aktualisieren nach Implementierung der neuen Features
+### 5. Multiple Specs Support
+- [ ] Add `--spec <name>` flag: load `.ralph/specs/<name>.md` as prompt
+- [ ] Auto-substitute `{SPEC_FILE}` placeholder in agent command
+- [ ] Update README with specs documentation
+
+### 6. Quiet Mode
+- [ ] Add `--quiet` / `-q` flag to suppress config header and iteration banners
+- [ ] Update README
+
+### 7. Documentation & Examples
+- [ ] Update README to cover all new features with examples
+- [ ] Ensure all examples are consistent with new features

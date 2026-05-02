@@ -1,65 +1,115 @@
 ● Read PROMPT.md
   └ 65 lines read
 
-● Check project structure, tasks.md, progress.txt (shell)
-  │ ls /Users/florians/Projekte/ralph/ && echo "---" && cat
-  │ /Users/florians/Projekte/ralph/tasks.md 2>/dev/null || echo "tasks.md NOT
-  │ FOUND" && echo "---" && cat /Users/florians/Projekte/ralph/progress.txt
-  │ 2>/dev/null || echo "progress.txt NOT FOUND"
-  └ 13 lines...
+● Check project state (shell)
+  │ cd /Users/florians/Projekte/ralph && ls -la && cat tasks.md 2>/dev/null ||
+  │ echo "NO_TASKS_MD" && cat progress.txt 2>/dev/null || echo "NO_PROGRESS_TXT"
+  └ 14 lines...
 
-● Read current ralph.sh (shell)
-  │ cat /Users/florians/Projekte/ralph/ralph.sh
-  └ 292 lines...
+Iteration 1. Let me explore the project and the reference repo before creating tasks.
 
-● Read README.md (shell)
-  │ cat /Users/florians/Projekte/ralph/README.md
-  └ 200 lines...
+● Check examples and .ralph dir (shell)
+  │ ls /Users/florians/Projekte/ralph/examples/ && ls
+  │ /Users/florians/Projekte/ralph/.ralph/
+  └ 3 lines...
 
-● Check examples and PROMPT_TEMPLATE (shell)
-  │ ls /Users/florians/Projekte/ralph/examples/ && cat
-  │ /Users/florians/Projekte/ralph/PROMPT_TEMPLATE.md
-  └ 57 lines...
+● Read existing project files (shell)
+  │ cd /Users/florians/Projekte/ralph && cat ralph.sh && echo
+  │ "---PROMPT_TEMPLATE---" && cat PROMPT_TEMPLATE.md && echo "---README---" &&
+  │ cat README.md
+  └ 570 lines...
 
-● Get file or directory contents (MCP: github-mcp-server) · / · owner: "federiconeri", repo: "wiggu…
-  └ [{"type":"dir","size":0,"name":".github","path":".github","sha":"308c509...
+Now let me explore wiggum-cli for features to integrate:
 
-● Get file or directory contents (MCP: github-mcp-server) · src · owner: "federiconeri", repo: "wig…
-  └ [{"type":"dir","size":0,"name":"__test-utils__","path":"src/__test-utils...
+● Check example files (shell)
+  │ cd /Users/florians/Projekte/ralph && cat examples/basic.sh
+  │ examples/with-prompt.sh examples/with-worktree.sh
+  └ 53 lines...
 
-● Get file or directory contents (MCP: github-mcp-server) · README.md · owner: "federiconeri", repo…
-  └ successfully downloaded text file (SHA: 67a84fe81eca2bae84758a1a2b104624...
+● Fetching web content https://github.com/federiconeri/wiggum-cli · url: "https://github.com/federi…
+  └ Contents of https://github.com/federiconeri/wiggum-cli:
 
-● Get file or directory contents (MCP: github-mcp-server) · src/index.ts · owner: "federiconeri", p…
-  └ successfully downloaded text file (SHA: 4fb4ce04b2bdb67536715e55b06aa92e...
+Good picture of the project. Now I'll create tasks.md, progress.txt, and implement the first task (embed PROMPT_TEMPLATE in the script).
 
-● Create tasks.md +29
+● Create tasks.md +47
 
-**SCHRITT 2:** Nächster Task: `--version` Flag – einfach, isoliert, sofort verifizierbar.
+● Create progress.txt +2
 
-● Edit ralph.sh +4
+Now implement Task 1: embed the PROMPT_TEMPLATE as a heredoc fallback inside `ralph.sh`.
 
-Now also add `-v`/`--version` to the usage text:
+● Read PROMPT_TEMPLATE.md
+  └ 55 lines read
 
-● Edit ralph.sh +1
+Now I'll add the embedded template fallback to `ralph.sh`:
 
-**SCHRITT 4:** Verifikation:
+● Read ralph.sh
+  └ L1:50 (50 lines read)
 
-● Syntax check and version flag test (shell)
-  │ cd /Users/florians/Projekte/ralph && bash -n ralph.sh && echo "Syntax OK" &&
-  │ bash ralph.sh --version && bash ralph.sh -v
-  └ 4 lines...
+● Read ralph.sh
+  └ L51:100 (50 lines read)
 
-**SCHRITT 5:** Memory aktualisieren und task abhaken:
+● Read ralph.sh
+  └ L155:215 (61 lines read)
 
-● Append progress entry (shell)
-  │ echo "[2026-05-02] Task: --version Flag. ralph.sh: -v/--version Flag
-  │ hinzugefügt (echo ralph 1.0.0, exit 0); Usage-Text ergänzt. tasks.md neu
-  │ erstellt. Syntax-Check + Flag-Test: OK." >>
-  │ /Users/florians/Projekte/ralph/progress.txt
-  └ 1 line...
+Now I'll make the changes to `ralph.sh`:
 
-● Edit tasks.md +1 -1
+● Edit ralph.sh +2 -2
 
-**SCHRITT 6:** Git Commit:
+● Edit ralph.sh +3 -1
+
+Now add the embedded template and update the template resolution logic:
+
+● Edit ralph.sh +71 -8
+
+Now update the dry-run output to show the template source:
+
+● Edit ralph.sh +9 -1
+
+Now also update the config header in the main loop to indicate the template source:
+
+● Read ralph.sh
+  └ L280:320 (41 lines read)
+
+● Read ralph.sh
+  └ L320:380 (60 lines read)
+
+● Edit ralph.sh +9 -1
+
+Now verify the changes work correctly:
+
+● Verify embedded template fallback works (shell)
+  │ cd /Users/florians/Projekte/ralph
+  │
+  │ # Test 1: dry-run with --goal uses embedded template (no
+  │ PROMPT_TEMPLATE.md present temporarily)
+  │ mv PROMPT_TEMPLATE.md PROMPT_TEMPLATE.md.bak…
+  └ 33 lines...
+
+● Check generated prompt content from embedded template (shell)
+  │ cd /Users/florians/Projekte/ralph
+  │
+  │ # Test 4: verify the generated .ralph/PROMPT.md content when no external
+  │ template
+  │ mv PROMPT_TEMPLATE.md PROMPT_TEMPLATE.md.bak…
+  └ 29 lines...
+
+The embedded template works perfectly. Now update the README to reflect this:
+
+● Edit README.md +6 -2
+
+Also update the File Layout section in README:
+
+● Edit README.md +2 -2
+
+Now update tasks.md (mark done) and progress.txt, then commit:
+
+● Edit tasks.md +4 -4
+
+● Update progress.txt (shell)
+  │ cd /Users/florians/Projekte/ralph
+  │ cat >> progress.txt <<'EOF'
+  │
+  │ [2026-05-02] Iteration 1: Task "Embed PROMPT_TEMPLATE in script"
+  │ - ralph.sh: added EMBEDDED_PROMPT_TEMPLATE heredoc; template-resolution …
+  └ 8 lines...
 

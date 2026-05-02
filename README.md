@@ -57,7 +57,7 @@ The `--` separator is **required** to distinguish ralph flags from the agent com
 
 ## PROMPT Integration
 
-ralph can auto-generate a structured agent prompt from `PROMPT_TEMPLATE.md` by substituting two placeholders:
+ralph can auto-generate a structured agent prompt by substituting two placeholders:
 
 | Placeholder | Flag |
 |---|---|
@@ -73,6 +73,10 @@ The filled template is saved to `.ralph/PROMPT.md`. Use `{PROMPT_FILE}` anywhere
   10 -- claude -p @{PROMPT_FILE}
 ```
 
+**No external file required.** ralph has a complete autonomous-agent prompt template built in. It is used automatically when `--goal` or `--stack` is provided and no `PROMPT_TEMPLATE.md` is found in the working directory.
+
+To customise the template, place a `PROMPT_TEMPLATE.md` in your project root — it takes priority over the built-in one.
+
 You can also provide a hand-crafted prompt file directly:
 
 ```bash
@@ -81,7 +85,7 @@ You can also provide a hand-crafted prompt file directly:
 
 ### Minimal prompt for the agent
 
-The agent only needs to output `COMPLETE: true` on its own line when all tasks are done. Everything else – task tracking, progress log, git commits – is managed by the agent itself via `tasks.md` and `progress.txt` (as defined in `PROMPT_TEMPLATE.md`).
+The agent only needs to output `COMPLETE: true` on its own line when all tasks are done. Everything else – task tracking, progress log, git commits – is managed by the agent itself via `tasks.md` and `progress.txt` (as defined in the built-in template).
 
 ---
 
@@ -172,8 +176,8 @@ After each iteration ralph prints `git diff --stat HEAD` (when inside a Git repo
 ## File Layout
 
 ```
-ralph.sh              # The runner
-PROMPT_TEMPLATE.md    # Template with {{GOAL}} and {{STACK}} placeholders
+ralph.sh              # The runner (includes built-in prompt template)
+PROMPT_TEMPLATE.md    # Optional: custom template with {{GOAL}} and {{STACK}} (overrides built-in)
 .ralph/
   PROMPT.md           # Generated prompt (from --goal/--stack)
   iteration.txt       # Current iteration (for --resume)

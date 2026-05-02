@@ -17,17 +17,20 @@ Usage:
 Optionen:
   --delay <s>              Pause zwischen Iterationen in Sekunden (Standard: 2, oder RALPH_DELAY)
   --max-iterations <n>     Maximale Anzahl Iterationen (Alias für Positionsargument)
+  --timeout <s>            Pro-Iteration-Timeout in Sekunden; Agent wird nach <s>s abgebrochen (0 = deaktiviert)
   --stop-regex <pattern>   Regex zum Erkennen des Stopp-Signals (Standard: STOP_REGEX oder ^COMPLETE:...)
   --dry-run                Konfiguration ausgeben, ohne den Befehl auszuführen; exit 0
   --resume                 Bei der zuletzt gespeicherten Iteration weitermachen (.ralph/iteration.txt)
   --worktree               Isolierten Git Worktree für diesen Run erstellen (Branch: ralph/run-<ts>)
-  --goal <text>            Projektziel (befüllt {{GOAL}} in PROMPT_TEMPLATE.md → .ralph/PROMPT.md)
-  --stack <text>           Technologie-Stack (befüllt {{STACK}} in PROMPT_TEMPLATE.md → .ralph/PROMPT.md)
+  --goal <text>            Projektziel (befüllt {{GOAL}} im Prompt-Template → .ralph/PROMPT.md)
+  --stack <text>           Technologie-Stack (befüllt {{STACK}} im Prompt-Template → .ralph/PROMPT.md)
   --prompt-file <path>     Fertigen Prompt direkt übergeben (überschreibt --goal/--stack)
   -v, --version            Versionsnummer ausgeben und beenden
 
 Prompt-Integration:
-  Mit --goal und --stack wird PROMPT_TEMPLATE.md befüllt und als .ralph/PROMPT.md gespeichert.
+  Mit --goal und --stack wird das Prompt-Template befüllt und als .ralph/PROMPT.md gespeichert.
+  Das Template ist im Skript eingebettet; eine externe PROMPT_TEMPLATE.md im Projektverzeichnis
+  überschreibt das eingebettete Template.
   Im Agent-Kommando kann {PROMPT_FILE} als Platzhalter für den Pfad verwendet werden:
     ./ralph.sh --goal "Build a REST API" --stack "Node.js" 5 -- claude -p @{PROMPT_FILE}
 
@@ -40,6 +43,7 @@ Beispiel:
   ./ralph.sh --resume 3 -- pi -p "Schreib einfach nur OK"
   ./ralph.sh --worktree 5 -- claude -p @{PROMPT_FILE}
   ./ralph.sh --goal "Baue eine REST API" --stack "Node.js, Express" 5 -- claude -p @{PROMPT_FILE}
+  ./ralph.sh --timeout 120 5 -- claude -p @{PROMPT_FILE}
 
 Hinweis:
   Standardmäßig stoppt der Loop bei einer Zeile wie:
@@ -50,6 +54,7 @@ EOF
 
 ITERATIONS="5"
 DELAY="${RALPH_DELAY:-2}"
+TIMEOUT=0
 DRY_RUN=0
 RESUME=0
 WORKTREE=0
@@ -81,6 +86,13 @@ while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
       ;;
     --max-iterations=*)
       ITERATIONS="${1#*=}"; shift
+      ;;
+    --timeout)
+      [[ -z "${2:-}" ]] && { echo "Fehler: --timeout benötigt einen Wert."; exit 1; }
+      TIMEOUT="$2"; shift 2
+      ;;
+    --timeout=*)
+      TIMEOUT="${1#*=}"; shift
       ;;
     --stop-regex)
       [[ -z "${2:-}" ]] && { echo "Fehler: --stop-regex benötigt einen Wert."; exit 1; }
@@ -142,6 +154,11 @@ if ! [[ "$DELAY" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
   exit 1
 fi
 
+if ! [[ "$TIMEOUT" =~ ^[0-9]+$ ]]; then
+  echo "Fehler: timeout muss eine nicht-negative ganze Zahl sein."
+  exit 1
+fi
+
 if [[ $# -lt 1 ]]; then
   echo "Fehler: Agent-Kommando fehlt."
   usage
@@ -150,6 +167,65 @@ fi
 
 CMD=("$@")
 STOP_REGEX="${STOP_REGEX_ARG:-${STOP_REGEX:-^COMPLETE:[[:space:]]*true$}}"
+
+# Embedded default prompt template (used when no PROMPT_TEMPLATE.md is present on disk)
+read -r -d '' EMBEDDED_PROMPT_TEMPLATE <<'EMBEDDED_EOF' || true
+SYSTEM DIRECTIVE: AUTONOMOUS RALPH LOOP AGENT
+Du bist ein autonomer Software-Engineering-Agent, der durch eine externe Bash-Schleife gesteuert wird. Du hast kein Gedächtnis zwischen den Iterationen. Dein gesamtes Wissen über das Projekt befindet sich ausschließlich im Dateisystem.
+
+1. PROJEKTZIEL & SPEZIFIKATION
+
+- Du baust folgendes Projekt:
+{{GOAL}}
+
+- Technologie-Stack & Architektur-Regeln:
+{{STACK}}
+
+2. STRIKTER WORKFLOW (IMMER BEFOLGEN!)
+Befolge diese Schritte exakt in der angegebenen Reihenfolge. Überspringe keinen Schritt.
+
+SCHRITT 1: Orientierung (State Recovery)
+
+Lese tasks.md (die Todo-Liste) und progress.txt (das Log deiner Vorgänger).
+
+Falls diese Dateien nicht existieren: Dies ist Iteration 1. Erstelle die grundlegende Projektstruktur. Erstelle eine tasks.md mit einer sehr granularen Checkliste basierend auf dem Projektziel. Erstelle eine leere progress.txt.
+
+SCHRITT 2: Task-Auswahl
+
+Identifiziere in der tasks.md den nächsten, einzelnen, logisch isolierten Task, der noch nicht erledigt ist.
+
+Mache niemals mehrere komplexe Dinge gleichzeitig.
+
+SCHRITT 3: Implementierung
+
+Implementiere den ausgewählten Task. Schreibe oder refactore den entsprechenden Code.
+
+SCHRITT 4: Backpressure & Verifikation (EXTREM WICHTIG)
+Du darfst niemals davon ausgehen, dass dein Code funktioniert. Du musst zwingend externe Validierung nutzen.
+
+Analysiere selbstständig die Projektstruktur (lese z. B. Dateien wie package.json, Makefile, Cargo.toml oder erkunde die Ordnerstruktur), um herauszufinden, welche Linter-, Type-Check- und Test-Befehle in diesem spezifischen Projekt verwendet werden.
+
+Führe die so identifizierten Prüf-Befehle (z. B. npm test, tsc --noEmit, pytest) über dein Terminal-Tool aus.
+Schlägt ein Test oder Linter fehl? Analysiere den Fehler und korrigiere den Code. Wenn du in einer Sackgasse steckst, dokumentiere es in Schritt 5 und beende dich für die nächste Iteration.
+
+SCHRITT 5: Gedächtnis aktualisieren (Memory Injection)
+
+Hänge an progress.txt einen kurzen Eintrag an: Welcher Task wurde bearbeitet? Welche Dateien wurden geändert? Gab es ungelöste Fehler? (Fasse dich kurz!).
+
+Markiere den Task in der tasks.md nur dann als erledigt (z.B. [x]), wenn der Code geschrieben und durch die Befehle aus Schritt 4 erfolgreich und fehlerfrei verifiziert wurde.
+
+SCHRITT 6: Git Commit
+
+Führe über das Terminal aus: git add . gefolgt von git commit -m "ralph: task update"
+
+SCHRITT 7: Terminierung
+
+Szenario A (Es gibt noch offene Tasks oder Fehler): Beende deine Ausgabe mit einer kurzen Zusammenfassung. Der externe Loop wird dich für den nächsten Task neu starten.
+
+Szenario B (ALLE Tasks sind erledigt UND verifiziert): Nur wenn absolut alle Anforderungen aus der tasks.md abgearbeitet sind und alle externen Checks fehlerfrei durchlaufen, gibst du exakt und als alleinstehende Zeile folgenden String aus:
+
+COMPLETE: true
+EMBEDDED_EOF
 
 # Determine the effective prompt file path
 RALPH_DIR=".ralph"
@@ -160,15 +236,19 @@ if [[ -n "$PROMPT_FILE_OVERRIDE" ]]; then
   EFFECTIVE_PROMPT_FILE="$PROMPT_FILE_OVERRIDE"
 elif [[ -n "$GOAL" || -n "$STACK" ]]; then
   TEMPLATE_FILE="PROMPT_TEMPLATE.md"
-  if [[ ! -f "$TEMPLATE_FILE" ]]; then
-    echo "Fehler: PROMPT_TEMPLATE.md nicht gefunden. Bitte im Projektverzeichnis ablegen."
-    exit 1
-  fi
   mkdir -p "$RALPH_DIR"
-  sed \
-    -e "s|{{GOAL}}|${GOAL}|g" \
-    -e "s|{{STACK}}|${STACK}|g" \
-    "$TEMPLATE_FILE" > "$GENERATED_PROMPT_FILE"
+  if [[ -f "$TEMPLATE_FILE" ]]; then
+    sed \
+      -e "s|{{GOAL}}|${GOAL}|g" \
+      -e "s|{{STACK}}|${STACK}|g" \
+      "$TEMPLATE_FILE" > "$GENERATED_PROMPT_FILE"
+  else
+    printf '%s' "$EMBEDDED_PROMPT_TEMPLATE" \
+      | sed \
+          -e "s|{{GOAL}}|${GOAL}|g" \
+          -e "s|{{STACK}}|${STACK}|g" \
+      > "$GENERATED_PROMPT_FILE"
+  fi
   EFFECTIVE_PROMPT_FILE="$GENERATED_PROMPT_FILE"
 fi
 
@@ -183,10 +263,19 @@ if [[ $DRY_RUN -eq 1 ]]; then
   echo "🔍 Dry-run – Konfiguration (kein Befehl wird ausgeführt):"
   echo "- Iterationen: $ITERATIONS"
   echo "- Delay:       ${DELAY}s"
+  echo "- Timeout:     $( [[ $TIMEOUT -gt 0 ]] && echo "${TIMEOUT}s" || echo 'deaktiviert' )"
   echo "- Stop-Regex:  $STOP_REGEX"
   echo "- Resume:      $( [[ $RESUME -eq 1 ]] && echo 'ja' || echo 'nein' )"
   echo "- Worktree:    $( [[ $WORKTREE -eq 1 ]] && echo 'ja' || echo 'nein' )"
-  [[ -n "$EFFECTIVE_PROMPT_FILE" ]] && echo "- Prompt-Datei: $EFFECTIVE_PROMPT_FILE"
+  if [[ -n "$EFFECTIVE_PROMPT_FILE" ]]; then
+    if [[ -n "$PROMPT_FILE_OVERRIDE" ]]; then
+      echo "- Prompt-Datei: $EFFECTIVE_PROMPT_FILE (--prompt-file)"
+    elif [[ -f "PROMPT_TEMPLATE.md" ]]; then
+      echo "- Prompt-Datei: $EFFECTIVE_PROMPT_FILE (aus PROMPT_TEMPLATE.md)"
+    else
+      echo "- Prompt-Datei: $EFFECTIVE_PROMPT_FILE (eingebettetes Template)"
+    fi
+  fi
   printf '%s ' "- Kommando:" "${CMD[@]}"; echo
   exit 0
 fi
@@ -247,11 +336,20 @@ fi
 printf '%s\n' "--- Ralph Konfiguration ---"
 printf '  %-18s %s\n' "Iterationen:"  "$ITERATIONS"
 printf '  %-18s %s\n' "Delay:"        "${DELAY}s"
+printf '  %-18s %s\n' "Timeout:"      "$( [[ $TIMEOUT -gt 0 ]] && echo "${TIMEOUT}s" || echo 'deaktiviert' )"
 printf '  %-18s %s\n' "Stop-Regex:"   "$STOP_REGEX"
 printf '  %-18s %s\n' "Resume:"       "$( [[ $RESUME -eq 1 ]] && echo 'ja' || echo 'nein' )"
 printf '  %-18s %s\n' "Worktree:"     "$( [[ $WORKTREE -eq 1 ]] && echo "$WORKTREE_PATH" || echo 'nein' )"
 printf '  %-18s %s\n' "Log-Datei:"    "$LOG_FILE"
-[[ -n "$EFFECTIVE_PROMPT_FILE" ]] && printf '  %-18s %s\n' "Prompt-Datei:" "$EFFECTIVE_PROMPT_FILE"
+if [[ -n "$EFFECTIVE_PROMPT_FILE" ]]; then
+  if [[ -n "$PROMPT_FILE_OVERRIDE" ]]; then
+    printf '  %-18s %s\n' "Prompt-Datei:" "$EFFECTIVE_PROMPT_FILE (--prompt-file)"
+  elif [[ -f "PROMPT_TEMPLATE.md" ]]; then
+    printf '  %-18s %s\n' "Prompt-Datei:" "$EFFECTIVE_PROMPT_FILE (aus PROMPT_TEMPLATE.md)"
+  else
+    printf '  %-18s %s\n' "Prompt-Datei:" "$EFFECTIVE_PROMPT_FILE (eingebettetes Template)"
+  fi
+fi
 printf '  Kommando:          '
 printf '%s ' "${CMD[@]}"; echo
 echo ""
