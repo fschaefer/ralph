@@ -134,10 +134,16 @@ if [[ $RESUME -eq 1 && -f "$ITERATION_FILE" ]]; then
   fi
 fi
 
-echo "Starte Ralph Loop"
-echo "- Iterationen: $ITERATIONS"
-echo "- Delay:       ${DELAY}s"
-printf '%s ' "- Kommando:" "${CMD[@]}"; echo
+printf '%s\n' "--- Ralph Konfiguration ---"
+printf '  %-18s %s\n' "Iterationen:"  "$ITERATIONS"
+printf '  %-18s %s\n' "Delay:"        "${DELAY}s"
+printf '  %-18s %s\n' "Stop-Regex:"   "$STOP_REGEX"
+printf '  %-18s %s\n' "Resume:"       "$( [[ $RESUME -eq 1 ]] && echo 'ja' || echo 'nein' )"
+printf '  %-18s %s\n' "Log-Datei:"    "$LOG_FILE"
+printf '  Kommando:          '
+printf '%s ' "${CMD[@]}"; echo
+echo ""
+
 while [[ $i -le $ITERATIONS ]]; do
   echo "============================================================"
   echo "Iteration $i/$ITERATIONS"

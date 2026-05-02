@@ -7,4 +7,4 @@
 - [x] **Dry-run**: `--dry-run` Flag – Konfiguration ausgeben, ohne den Befehl auszuführen; exit 0
 - [x] **Resume**: `--resume` Flag – aktuelle Iteration in `.ralph/iteration.txt` speichern; beim nächsten Start mit `--resume` dort weitermachen
 - [x] **Named flags**: `--max-iterations <n>` und `--stop-regex <pattern>` als benannte Alternativen zu Positionalargument/Env-Var hinzufügen (Rückwärtskompatibilität bleibt erhalten)
-- [ ] **Config-Display**: Formatierte Konfigurationsübersicht (Iterationen, Kommando, Delay, Regex) vor dem Schleifenstart ausgeben
+- [x] **Config-Display**: Formatierte Konfigurationsübersicht (Iterationen, Kommando, Delay, Regex) vor dem Schleifenstart ausgeben
