@@ -1,35 +1,65 @@
 ● Read PROMPT.md
-  └ 64 lines read
+  └ 65 lines read
 
-● List project files and read tasks/progress (shell)
+● Check project structure, tasks.md, progress.txt (shell)
   │ ls /Users/florians/Projekte/ralph/ && echo "---" && cat
-  │ /Users/florians/Projekte/ralph/tasks.md 2>/dev/null || echo "NO tasks.md" &&
-  │ echo "---" && cat /Users/florians/Projekte/ralph/progress.txt 2>/dev/null ||
-  │ echo "NO progress.txt"
-  └ 28 lines...
+  │ /Users/florians/Projekte/ralph/tasks.md 2>/dev/null || echo "tasks.md NOT
+  │ FOUND" && echo "---" && cat /Users/florians/Projekte/ralph/progress.txt
+  │ 2>/dev/null || echo "progress.txt NOT FOUND"
+  └ 13 lines...
 
-● Read ralph.sh
-  └ 282 lines read
+● Read current ralph.sh (shell)
+  │ cat /Users/florians/Projekte/ralph/ralph.sh
+  └ 292 lines...
 
-● Read PROMPT_TEMPLATE.md
-  └ 55 lines read
+● Read README.md (shell)
+  │ cat /Users/florians/Projekte/ralph/README.md
+  └ 200 lines...
 
-**Next task:** Run Summary – `git diff --stat` nach jeder Iteration.
+● Check examples and PROMPT_TEMPLATE (shell)
+  │ ls /Users/florians/Projekte/ralph/examples/ && cat
+  │ /Users/florians/Projekte/ralph/PROMPT_TEMPLATE.md
+  └ 57 lines...
 
-● Edit ralph.sh +9
+● Get file or directory contents (MCP: github-mcp-server) · / · owner: "federiconeri", repo: "wiggu…
+  └ [{"type":"dir","size":0,"name":".github","path":".github","sha":"308c509...
 
-● Syntax check and dry-run verification (shell)
+● Get file or directory contents (MCP: github-mcp-server) · src · owner: "federiconeri", repo: "wig…
+  └ [{"type":"dir","size":0,"name":"__test-utils__","path":"src/__test-utils...
+
+● Get file or directory contents (MCP: github-mcp-server) · README.md · owner: "federiconeri", repo…
+  └ successfully downloaded text file (SHA: 67a84fe81eca2bae84758a1a2b104624...
+
+● Get file or directory contents (MCP: github-mcp-server) · src/index.ts · owner: "federiconeri", p…
+  └ successfully downloaded text file (SHA: 4fb4ce04b2bdb67536715e55b06aa92e...
+
+● Create tasks.md +29
+
+**SCHRITT 2:** Nächster Task: `--version` Flag – einfach, isoliert, sofort verifizierbar.
+
+● Edit ralph.sh +4
+
+Now also add `-v`/`--version` to the usage text:
+
+● Edit ralph.sh +1
+
+**SCHRITT 4:** Verifikation:
+
+● Syntax check and version flag test (shell)
   │ cd /Users/florians/Projekte/ralph && bash -n ralph.sh && echo "Syntax OK" &&
-  │ bash ralph.sh --dry-run 1 -- echo test
-  └ 9 lines...
+  │ bash ralph.sh --version && bash ralph.sh -v
+  └ 4 lines...
 
-Gut. Jetzt `tasks.md` und `progress.txt` aktualisieren und committen.
+**SCHRITT 5:** Memory aktualisieren und task abhaken:
+
+● Append progress entry (shell)
+  │ echo "[2026-05-02] Task: --version Flag. ralph.sh: -v/--version Flag
+  │ hinzugefügt (echo ralph 1.0.0, exit 0); Usage-Text ergänzt. tasks.md neu
+  │ erstellt. Syntax-Check + Flag-Test: OK." >>
+  │ /Users/florians/Projekte/ralph/progress.txt
+  └ 1 line...
 
 ● Edit tasks.md +1 -1
 
-● Append to progress.txt (shell)
-  │ echo "[2026-05-02] Task: Run Summary. ralph.sh: git diff --stat HEAD nach
-  │ jeder Iteration ausgegeben (nur in Git-Repos). Syntax-Check + Dry-run: OK."
-  │ >> /Users/florians/Projekte/ralph/progress.txt
-  └ 1 line...
+**SCHRITT 6:** Git Commit:
 

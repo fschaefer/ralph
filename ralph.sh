@@ -24,6 +24,7 @@ Optionen:
   --goal <text>            Projektziel (befüllt {{GOAL}} in PROMPT_TEMPLATE.md → .ralph/PROMPT.md)
   --stack <text>           Technologie-Stack (befüllt {{STACK}} in PROMPT_TEMPLATE.md → .ralph/PROMPT.md)
   --prompt-file <path>     Fertigen Prompt direkt übergeben (überschreibt --goal/--stack)
+  -v, --version            Versionsnummer ausgeben und beenden
 
 Prompt-Integration:
   Mit --goal und --stack wird PROMPT_TEMPLATE.md befüllt und als .ralph/PROMPT.md gespeichert.
@@ -62,6 +63,10 @@ while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
   case "$1" in
     -h|--help)
       usage; exit 0
+      ;;
+    -v|--version)
+      echo "ralph 1.0.0"
+      exit 0
       ;;
     --delay)
       [[ -z "${2:-}" ]] && { echo "Fehler: --delay benötigt einen Wert."; exit 1; }

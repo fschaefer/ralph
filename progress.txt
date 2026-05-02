@@ -5,3 +5,4 @@
 [2026-05-02] Task: Run Summary. ralph.sh: git diff --stat HEAD nach jeder Iteration ausgegeben (nur in Git-Repos). Syntax-Check + Dry-run: OK.
 [2026-05-02] Task: README.md. README.md erstellt mit Installation, Usage, allen Flags, PROMPT-Integration, Worktree, Resume, Stop-Signal, Exit-Codes, File-Layout, Beispielen. Syntax-Check + Dry-run: OK.
 [2026-05-02] Task: examples/. basic.sh, with-prompt.sh, with-worktree.sh erstellt. Syntax-Check: OK.
+[2026-05-02] Task: --version Flag. ralph.sh: -v/--version Flag hinzugefügt (echo ralph 1.0.0, exit 0); Usage-Text ergänzt. tasks.md neu erstellt. Syntax-Check + Flag-Test: OK.

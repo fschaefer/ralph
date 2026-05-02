@@ -11,6 +11,7 @@ Readme
 Beispiele
 usw.
 Außerdem soll der Prompt vom Benutzer so minimal wie möglich gehalten werden. Integriere daher das PROMPT_TEMPLATE.md möglichst elegant.
+PROMPT_TEMPLATE.md vielleicht im Skript?
 
 Technologie-Stack & Architektur-Regeln:
 - Es soll ein einfaches Skript bleiben.
