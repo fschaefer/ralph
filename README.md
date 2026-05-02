@@ -70,7 +70,7 @@ ralph can auto-generate a structured agent prompt by substituting two placeholde
 | `{{GOAL}}` | `--goal "..."` |
 | `{{STACK}}` | `--stack "..."` |
 
-The filled template is saved to `.ralph/PROMPT.md`. Use `{PROMPT_FILE}` anywhere in your agent command to refer to it:
+The filled template is saved to `.ralph/PROMPT.md`. Use `{PROMPT_FILE}` anywhere in your agent command to refer to it — ralph automatically replaces `{PROMPT_FILE}` with the actual path (`.ralph/PROMPT.md`) before each agent invocation:
 
 ```bash
 ./ralph.sh \
@@ -136,7 +136,7 @@ Enable `--action-inbox` to let the agent pause the loop and ask you a question m
 When the agent outputs a line starting with `ACTION_REQUIRED:`, ralph stops the loop, shows the message, and waits for your typed response. The response is written to `.ralph/inbox-response.txt` so the agent can read it on the next iteration.
 
 ```bash
-./ralph.sh --action-inbox 10 -- claude -p @.ralph/PROMPT.md
+./ralph.sh --action-inbox 10 -- claude -p @{PROMPT_FILE}
 ```
 
 **Agent side** – the agent emits the signal like this:
@@ -162,7 +162,7 @@ On the next iteration the agent reads `.ralph/inbox-response.txt` and continues.
 Use `--inbox-timeout <s>` to automatically continue if no input is received within the given number of seconds. If the timeout fires, an empty response is written and the loop continues.
 
 ```bash
-./ralph.sh --action-inbox --inbox-timeout 60 10 -- claude -p @.ralph/PROMPT.md
+./ralph.sh --action-inbox --inbox-timeout 60 10 -- claude -p @{PROMPT_FILE}
 ```
 
 ---
@@ -188,7 +188,7 @@ Watch a running ralph session live from a second terminal:
 If a run is interrupted, restart it where it left off:
 
 ```bash
-./ralph.sh --resume 10 -- claude -p @.ralph/PROMPT.md
+./ralph.sh --resume 10 -- claude -p @{PROMPT_FILE}
 ```
 
 The current iteration is persisted to `.ralph/iteration.txt` before each agent call.
