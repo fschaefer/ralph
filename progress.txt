@@ -2,3 +2,4 @@
 
 [2026-05-02] Task: SIGINT-Trap. Datei: src/ralph.sh. Trap auf INT gesetzt → exit 130. Syntax-Check: OK. Keine offenen Fehler.
 [2026-05-02] Task: Delay. Datei: src/ralph.sh. --delay <s> Flag + RALPH_DELAY Env-Var hinzugefügt (Standard 2s). Validation: bash -n + Funktionstests OK.
+[2026-05-02] Task: Dry-run. Datei: src/ralph.sh. --dry-run Flag hinzugefügt: gibt Konfiguration aus und beendet sich mit exit 0. Syntax-Check + Funktionstest: OK.

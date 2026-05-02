@@ -12,14 +12,16 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  ./ralph.sh [--delay <s>] [iterations] -- <agent-command...>
+  ./ralph.sh [--delay <s>] [--dry-run] [iterations] -- <agent-command...>
 
 Optionen:
   --delay <s>   Pause zwischen Iterationen in Sekunden (Standard: 2, oder RALPH_DELAY)
+  --dry-run     Konfiguration ausgeben, ohne den Befehl auszuführen; exit 0
 
 Beispiel:
   ./ralph.sh 3 -- pi -p "Schreib einfach nur OK"
   ./ralph.sh --delay 5 3 -- pi -p "Schreib einfach nur OK"
+  ./ralph.sh --dry-run 3 -- pi -p "Schreib einfach nur OK"
 
 Hinweis:
   Standardmäßig stoppt der Loop bei einer Zeile wie:
@@ -30,6 +32,7 @@ EOF
 
 ITERATIONS="5"
 DELAY="${RALPH_DELAY:-2}"
+DRY_RUN=0
 
 # Parse named flags and optional positional iterations before '--'
 while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
@@ -43,6 +46,9 @@ while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
       ;;
     --delay=*)
       DELAY="${1#*=}"; shift
+      ;;
+    --dry-run)
+      DRY_RUN=1; shift
       ;;
     *)
       ITERATIONS="$1"; shift; break
@@ -75,6 +81,15 @@ fi
 
 CMD=("$@")
 STOP_REGEX="${STOP_REGEX:-^COMPLETE:[[:space:]]*true$}"
+
+if [[ $DRY_RUN -eq 1 ]]; then
+  echo "🔍 Dry-run – Konfiguration (kein Befehl wird ausgeführt):"
+  echo "- Iterationen: $ITERATIONS"
+  echo "- Delay:       ${DELAY}s"
+  echo "- Stop-Regex:  $STOP_REGEX"
+  printf '%s ' "- Kommando:" "${CMD[@]}"; echo
+  exit 0
+fi
 
 trap 'echo; echo "⚠️ Unterbrochen (SIGINT). Letzter Stand in $LAST_OUTPUT_FILE"; exit 130' INT
 
