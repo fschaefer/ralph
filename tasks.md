@@ -15,6 +15,6 @@
 - [x] **PROMPT-Integration**: `--goal <text>` und `--stack <text>` Flags; Template befüllen → `.ralph/PROMPT.md`; `{PROMPT_FILE}` Platzhalter in CMD-Args ersetzen; `--prompt-file <path>` Override
 - [x] **--worktree**: Git Worktree Isolation für parallele Runs; separates Verzeichnis je Run
 - [x] **Run Summary**: Nach jedem Loop kompakte Zusammenfassung via `git diff --stat` ausgeben
-- [ ] **README.md**: Installation, Usage, alle Flags, Beispiele, PROMPT-Integration erklärt
+- [x] **README.md**: Installation, Usage, alle Flags, Beispiele, PROMPT-Integration erklärt
 - [ ] **examples/**: Beispielskripte (`basic.sh`, `with-prompt.sh`, `with-worktree.sh`)
 - [x] **PROMPT_TEMPLATE.md**: Platzhalter `{{GOAL}}` und `{{STACK}}` klar kennzeichnen; minimaler User-Input dokumentieren
