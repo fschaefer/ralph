@@ -285,7 +285,13 @@ Mark the task in tasks.md as done (e.g. [x]) only when the code has been written
 
 STEP 6: Git commit
 
-Run via terminal: git add . followed by git commit -m "ralph: task update"
+Run via terminal: git add . and then git commit with a concise, descriptive message
+that summarises what was implemented in this iteration. Use the format:
+  ralph: <short description of the task>
+Examples:
+  git commit -m "ralph: add user authentication endpoint"
+  git commit -m "ralph: fix input validation in registration form"
+  git commit -m "ralph: implement pagination for product list"
 Note: make sure .ralph/ is listed in .gitignore so the runner's state files are not committed.
 
 STEP 7: Termination
