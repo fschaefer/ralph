@@ -30,10 +30,10 @@ The `--` separator is **required** to distinguish ralph flags from the agent com
 
 ```bash
 # Run an agent up to 5 times, stop when it prints "COMPLETE: true"
-./ralph.sh 5 -- claude -p @.ralph/PROMPT.md
+./ralph.sh 5 -- claude -p @{PROMPT_FILE}
 
 # Same, using --max-iterations
-./ralph.sh --max-iterations 5 -- claude -p @.ralph/PROMPT.md
+./ralph.sh --max-iterations 5 -- claude -p @{PROMPT_FILE}
 ```
 
 ---
