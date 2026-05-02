@@ -11,3 +11,8 @@
 - README.md: added Action Inbox section with examples; updated options table and file layout
 - examples/with-action-inbox.sh: created
 - Verification: bash -n OK; dry-run tests confirmed correct output for --action-inbox and --inbox-timeout flags; grep pattern confirmed
+
+[2026-05-02] Iteration 3: Task "Run Summary"
+- ralph.sh: added ITER_STATUSES array + RUN_START_TS tracking; print_summary() function prints elapsed time, per-iteration table (iter/exit/status), and outcome line; called at stop-condition exit, max-iterations exit, and SIGINT trap
+- tasks.md: section 3 marked done
+- Verification: bash -n OK; dry-run OK; tested stop-condition path (1 iter) and max-iterations path (2 iters) — summary prints correctly in both cases

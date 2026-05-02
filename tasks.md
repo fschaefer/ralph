@@ -21,10 +21,10 @@
 - [x] Add `examples/with-action-inbox.sh`
 
 ### 3. Run Summary
-- [ ] Track wall-clock start time of the run
-- [ ] Print elapsed total time at the end of the loop
-- [ ] Print per-iteration exit codes / status in summary
-- [ ] Print final outcome line (completed / max-iterations reached / interrupted)
+- [x] Track wall-clock start time of the run
+- [x] Print elapsed total time at the end of the loop
+- [x] Print per-iteration exit codes / status in summary
+- [x] Print final outcome line (completed / max-iterations reached / interrupted)
 
 ### 4. Monitor Mode
 - [ ] Add `--monitor` subcommand / flag: tail `.ralph/ralph.log` in real-time

@@ -303,7 +303,38 @@ if [[ $DRY_RUN -eq 1 ]]; then
   exit 0
 fi
 
-trap 'echo; echo "⚠️ Unterbrochen (SIGINT). Letzter Stand in $LAST_OUTPUT_FILE"; exit 130' INT
+ITER_STATUSES=()
+RUN_START_TS=0
+
+print_summary() {
+  local outcome="${1:-unbekannt}"
+  local elapsed=$(( $(date +%s) - RUN_START_TS ))
+  local mins=$(( elapsed / 60 ))
+  local secs=$(( elapsed % 60 ))
+  echo ""
+  echo "============================================================"
+  echo "📋 Run-Zusammenfassung"
+  echo "============================================================"
+  printf '  %-20s %dm %02ds\n' "Gesamtdauer:" "$mins" "$secs"
+  if [[ ${#ITER_STATUSES[@]} -gt 0 ]]; then
+    echo ""
+    printf '  %-6s  %-6s  %s\n' "Iter." "Exit" "Status"
+    printf '  %-6s  %-6s  %s\n' "------" "------" "------"
+    local entry iter rest code note
+    for entry in "${ITER_STATUSES[@]}"; do
+      iter="${entry%%:*}"
+      rest="${entry#*:}"
+      code="${rest%%:*}"
+      note="${rest#*:}"
+      printf '  %-6s  %-6s  %s\n' "$iter" "$code" "$note"
+    done
+  fi
+  echo ""
+  printf '  %-20s %s\n' "Ergebnis:" "$outcome"
+  echo "============================================================"
+}
+
+trap 'echo; print_summary "⚠️  Unterbrochen (SIGINT)"; echo "Letzter Stand in $LAST_OUTPUT_FILE"; exit 130' INT
 
 mkdir -p "$RALPH_DIR"
 LOG_FILE="$RALPH_DIR/ralph.log"
@@ -380,6 +411,8 @@ printf '  Kommando:          '
 printf '%s ' "${CMD[@]}"; echo
 echo ""
 
+RUN_START_TS=$(date +%s)
+
 while [[ $i -le $ITERATIONS ]]; do
   echo "============================================================"
   echo "Iteration $i/$ITERATIONS"
@@ -407,8 +440,21 @@ while [[ $i -le $ITERATIONS ]]; do
     fi
   fi
 
-  if grep -Eiq "$STOP_REGEX" "$LAST_OUTPUT_FILE"; then
+  STOP_MATCHED=0
+  grep -Eiq "$STOP_REGEX" "$LAST_OUTPUT_FILE" && STOP_MATCHED=1 || true
+
+  if [[ $STOP_MATCHED -eq 1 ]]; then
+    _ITER_NOTE="✓ Stopp"
+  elif [[ $EXIT_CODE -ne 0 ]]; then
+    _ITER_NOTE="✗ Fehler"
+  else
+    _ITER_NOTE="→ weiter"
+  fi
+  ITER_STATUSES+=("$i:$EXIT_CODE:$_ITER_NOTE")
+
+  if [[ $STOP_MATCHED -eq 1 ]]; then
     echo "✅ Stopp-Bedingung erfüllt in Iteration $i"
+    print_summary "✅ Stopp-Bedingung erfüllt (Iteration $i)"
     exit 0
   fi
 
@@ -440,4 +486,5 @@ while [[ $i -le $ITERATIONS ]]; do
 done
 
 echo "⚠️ Max. Iterationen erreicht."
+print_summary "⚠️  Max. Iterationen ($ITERATIONS) erreicht"
 exit 2
