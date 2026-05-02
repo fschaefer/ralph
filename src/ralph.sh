@@ -12,23 +12,27 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  ./ralph.sh [--delay <s>] [--dry-run] [--resume] [iterations] -- <agent-command...>
+  ./ralph.sh [--delay <s>] [--dry-run] [--resume] [--max-iterations <n>] [--stop-regex <pattern>] [iterations] -- <agent-command...>
 
 Optionen:
-  --delay <s>   Pause zwischen Iterationen in Sekunden (Standard: 2, oder RALPH_DELAY)
-  --dry-run     Konfiguration ausgeben, ohne den Befehl auszuführen; exit 0
-  --resume      Bei der zuletzt gespeicherten Iteration weitermachen (.ralph/iteration.txt)
+  --delay <s>              Pause zwischen Iterationen in Sekunden (Standard: 2, oder RALPH_DELAY)
+  --max-iterations <n>     Maximale Anzahl Iterationen (Alias für Positionsargument)
+  --stop-regex <pattern>   Regex zum Erkennen des Stopp-Signals (Standard: STOP_REGEX oder ^COMPLETE:...)
+  --dry-run                Konfiguration ausgeben, ohne den Befehl auszuführen; exit 0
+  --resume                 Bei der zuletzt gespeicherten Iteration weitermachen (.ralph/iteration.txt)
 
 Beispiel:
   ./ralph.sh 3 -- pi -p "Schreib einfach nur OK"
+  ./ralph.sh --max-iterations 3 -- pi -p "Schreib einfach nur OK"
   ./ralph.sh --delay 5 3 -- pi -p "Schreib einfach nur OK"
+  ./ralph.sh --stop-regex '^DONE$' 3 -- pi -p "Schreib einfach nur OK"
   ./ralph.sh --dry-run 3 -- pi -p "Schreib einfach nur OK"
   ./ralph.sh --resume 3 -- pi -p "Schreib einfach nur OK"
 
 Hinweis:
   Standardmäßig stoppt der Loop bei einer Zeile wie:
     COMPLETE: true
-  Regex anpassbar über STOP_REGEX.
+  Regex anpassbar über --stop-regex oder STOP_REGEX.
 EOF
 }
 
@@ -36,6 +40,7 @@ ITERATIONS="5"
 DELAY="${RALPH_DELAY:-2}"
 DRY_RUN=0
 RESUME=0
+STOP_REGEX_ARG=""
 
 # Parse named flags and optional positional iterations before '--'
 while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
@@ -49,6 +54,20 @@ while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
       ;;
     --delay=*)
       DELAY="${1#*=}"; shift
+      ;;
+    --max-iterations)
+      [[ -z "${2:-}" ]] && { echo "Fehler: --max-iterations benötigt einen Wert."; exit 1; }
+      ITERATIONS="$2"; shift 2
+      ;;
+    --max-iterations=*)
+      ITERATIONS="${1#*=}"; shift
+      ;;
+    --stop-regex)
+      [[ -z "${2:-}" ]] && { echo "Fehler: --stop-regex benötigt einen Wert."; exit 1; }
+      STOP_REGEX_ARG="$2"; shift 2
+      ;;
+    --stop-regex=*)
+      STOP_REGEX_ARG="${1#*=}"; shift
       ;;
     --dry-run)
       DRY_RUN=1; shift
@@ -86,7 +105,7 @@ if [[ $# -lt 1 ]]; then
 fi
 
 CMD=("$@")
-STOP_REGEX="${STOP_REGEX:-^COMPLETE:[[:space:]]*true$}"
+STOP_REGEX="${STOP_REGEX_ARG:-${STOP_REGEX:-^COMPLETE:[[:space:]]*true$}}"
 
 if [[ $DRY_RUN -eq 1 ]]; then
   echo "🔍 Dry-run – Konfiguration (kein Befehl wird ausgeführt):"

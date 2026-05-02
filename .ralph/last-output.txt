@@ -4,76 +4,62 @@
 ● List directory .
   └ 6 files found
 
-● Check if tasks.md and progress.txt exist (shell)
+● Check for tasks.md, progress.txt, and ralph.sh (shell)
   │ ls /Users/florians/Projekte/ralph/tasks.md
-  │ /Users/florians/Projekte/ralph/progress.txt 2>&1
-  └ 2 lines...
+  │ /Users/florians/Projekte/ralph/progress.txt 2>&1; echo "---"; cat
+  │ /Users/florians/Projekte/ralph/ralph.sh 2>/dev/null || echo "ralph.sh not
+  │ found"
+  └ 4 lines...
 
 ● Read tasks.md
   └ 10 lines read
 
 ● Read progress.txt
-  └ 5 lines read
+  └ 6 lines read
 
 ● List directory src
   └ 1 file found
 
 ● Read ralph.sh
   │ src/ralph.sh
-  └ 133 lines read
+  └ 150 lines read
 
-● Fetching web content https://github.com/federiconeri/wiggum-cli · url: "https://github.com/federi…
-  └ Contents of https://github.com/federiconeri/wiggum-cli:
+**SCHRITT 1: Orientierung** – tasks.md und progress.txt existieren. Nächster offener Task ist **Named flags**.
 
-● Get file or directory contents (MCP: github-mcp-server) · src · owner: "federiconeri", repo: "wig…
-  └ [{"type":"dir","size":0,"name":"__test-utils__","path":"src/__test-utils...
+**SCHRITT 2: Task-Auswahl** – Implementiere `--max-iterations <n>` und `--stop-regex <pattern>` als benannte Flags.
 
-● Get file or directory contents (MCP: github-mcp-server) · src/agent · owner: "federiconeri", path…
-  └ [{"type":"dir","size":0,"name":"memory","path":"src/agent/memory","sha":...
-
-**SCHRITT 2**: Next task: **Resume** — `--resume` flag, persist iteration in `.ralph/iteration.txt`.
-
-**SCHRITT 3**: Implementing the feature:
-
-● Edit ralph.sh +3 -1
+● Edit ralph.sh +9 -5
   └ src/ralph.sh
 
-● Edit ralph.sh +4
+● Edit ralph.sh +15
   └ src/ralph.sh
 
-Now update the dry-run output, the main loop setup, and iteration persistence:
+Now update the STOP_REGEX line to use the arg if provided:
 
-● Edit ralph.sh +11 -2
+● Edit ralph.sh +1 -1
   └ src/ralph.sh
 
-Now add iteration persistence inside the loop:
+**SCHRITT 4: Verifikation**
 
-● Edit ralph.sh +2
-  └ src/ralph.sh
-
-**SCHRITT 4**: Verify syntax and functionality:
-
-● Syntax check (shell)
-  │ bash -n /Users/florians/Projekte/ralph/src/ralph.sh && echo "Syntax OK"
-  └ 2 lines...
-
-● Functional tests for --resume (shell)
-  │ cd /tmp && rm -rf ralph-test && mkdir ralph-test && cd ralph-test &&
+● Syntax check and functional tests (shell)
+  │ cd /Users/florians/Projekte/ralph
+  │ bash -n src/ralph.sh && echo "Syntax OK"
   │
-  │ # Test 1: --resume without file -> start at 1
-  │ bash /Users/florians/Projekte/ralph/src/ralph.sh --resume 3 -- echo
-  │ "COMPLETE: true" | head -5…
-  └ 42 lines...
+  │ # Test --max-iterations flag
+  │ bash src/ralph.sh --max-iterations 2 --dry-run -- echo "hi" | grep …
+  └ 21 lines...
 
-All tests pass. **SCHRITT 5 & 6**: Update memory and commit:
-
-● Update progress.txt (shell)
-  │ cd /Users/florians/Projekte/ralph && cat >> progress.txt << 'EOF'
-  │ [2026-05-02] Task: Resume. Datei: src/ralph.sh. --resume Flag hinzugefügt:
-  │ speichert aktuelle Iteration in .ralph/iteration.txt; startet bei --resume
-  │ von dort. Syntax-Check + Funktionstests OK.
-  │ EOF
-  └ 1 line...
+All tests pass. **SCHRITT 5: Gedächtnis aktualisieren** und tasks.md markieren:
 
 ● Edit tasks.md +1 -1
+
+● Update progress.txt (shell)
+  │ echo "[2026-05-02] Task: Named flags. Datei: src/ralph.sh. --max-iterations
+  │ <n> und --stop-regex <pattern> Flags hinzugefügt (inkl. = Variante).
+  │ STOP_REGEX_ARG hat Vorrang vor STOP_REGEX Env-Var. Rückwärtskompatibilität
+  │ erhalten. Syntax-Check + Funktionstests OK." >>
+  │ /Users/florians/Projekte/ralph/progress.txt
+  └ 1 line...
+
+**SCHRITT 6: Git Commit**
 

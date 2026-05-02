@@ -4,3 +4,4 @@
 [2026-05-02] Task: Delay. Datei: src/ralph.sh. --delay <s> Flag + RALPH_DELAY Env-Var hinzugefügt (Standard 2s). Validation: bash -n + Funktionstests OK.
 [2026-05-02] Task: Dry-run. Datei: src/ralph.sh. --dry-run Flag hinzugefügt: gibt Konfiguration aus und beendet sich mit exit 0. Syntax-Check + Funktionstest: OK.
 [2026-05-02] Task: Resume. Datei: src/ralph.sh. --resume Flag hinzugefügt: speichert aktuelle Iteration in .ralph/iteration.txt; startet bei --resume von dort. Syntax-Check + Funktionstests OK.
+[2026-05-02] Task: Named flags. Datei: src/ralph.sh. --max-iterations <n> und --stop-regex <pattern> Flags hinzugefügt (inkl. = Variante). STOP_REGEX_ARG hat Vorrang vor STOP_REGEX Env-Var. Rückwärtskompatibilität erhalten. Syntax-Check + Funktionstests OK.
