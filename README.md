@@ -51,6 +51,7 @@ The `--` separator is **required** to distinguish ralph flags from the agent com
 | `--worktree` | off | Run the agent inside an isolated Git worktree |
 | `--action-inbox` | off | Pause when agent outputs `ACTION_REQUIRED: <msg>`; wait for user input |
 | `--inbox-timeout <s>` | `0` (unlimited) | Timeout for user input prompt (requires `--action-inbox`) |
+| `--monitor` | off | Tail `.ralph/ralph.log` in real-time (open in a second terminal) |
 | `--goal <text>` | – | Project goal – fills `{{GOAL}}` in `PROMPT_TEMPLATE.md` |
 | `--stack <text>` | – | Tech stack – fills `{{STACK}}` in `PROMPT_TEMPLATE.md` |
 | `--prompt-file <path>` | – | Use a ready-made prompt file (overrides `--goal`/`--stack`) |
@@ -142,6 +143,22 @@ Use `--inbox-timeout <s>` to automatically continue if no input is received with
 ```bash
 ./ralph.sh --action-inbox --inbox-timeout 60 10 -- claude -p @.ralph/PROMPT.md
 ```
+
+---
+
+## Monitor Mode
+
+Watch a running ralph session live from a second terminal:
+
+```bash
+# Terminal 1 – start the run
+./ralph.sh --goal "Build a REST API" --stack "Node.js" 10 -- claude -p @{PROMPT_FILE}
+
+# Terminal 2 – tail the live log
+./ralph.sh --monitor
+```
+
+`--monitor` shows the last 50 log lines and then follows `.ralph/ralph.log` in real-time, including the current iteration number. Press `Ctrl+C` to stop monitoring; the run in Terminal 1 is unaffected.
 
 ---
 
@@ -238,6 +255,7 @@ See the [`examples/`](examples/) directory:
 - [`with-prompt.sh`](examples/with-prompt.sh) – Using `--goal` and `--stack` for auto-generated prompts
 - [`with-worktree.sh`](examples/with-worktree.sh) – Isolated Git worktree run
 - [`with-action-inbox.sh`](examples/with-action-inbox.sh) – Interactive Action Inbox pause-and-approve
+- [`monitor.sh`](examples/monitor.sh) – Live log monitoring in a second terminal
 
 ---
 

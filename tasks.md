@@ -27,10 +27,10 @@
 - [x] Print final outcome line (completed / max-iterations reached / interrupted)
 
 ### 4. Monitor Mode
-- [ ] Add `--monitor` subcommand / flag: tail `.ralph/ralph.log` in real-time
-- [ ] Show current iteration counter alongside tailed output
-- [ ] Update README with monitor documentation
-- [ ] Add `examples/monitor.sh`
+- [x] Add `--monitor` subcommand / flag: tail `.ralph/ralph.log` in real-time
+- [x] Show current iteration counter alongside tailed output
+- [x] Update README with monitor documentation
+- [x] Add `examples/monitor.sh`
 
 ### 5. Multiple Specs Support
 - [ ] Add `--spec <name>` flag: load `.ralph/specs/<name>.md` as prompt
@@ -46,3 +46,4 @@
 - [ ] Update README to cover all new features with examples
 - [ ] Ensure all examples are consistent with new features
 - [ ] Cleanup folder
+- [ ] Use github.com/fschaefer/ralph

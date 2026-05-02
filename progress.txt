@@ -16,3 +16,9 @@
 - ralph.sh: added ITER_STATUSES array + RUN_START_TS tracking; print_summary() function prints elapsed time, per-iteration table (iter/exit/status), and outcome line; called at stop-condition exit, max-iterations exit, and SIGINT trap
 - tasks.md: section 3 marked done
 - Verification: bash -n OK; dry-run OK; tested stop-condition path (1 iter) and max-iterations path (2 iters) — summary prints correctly in both cases
+
+[2026-05-02] Iteration 4: Task "Monitor Mode"
+- ralph.sh: added MONITOR flag; --monitor subcommand tails .ralph/ralph.log with current iteration header; bypasses -- separator requirement; added to usage/examples
+- README.md: added Monitor Mode section; updated options table; added monitor.sh to examples list
+- examples/monitor.sh: created
+- Verification: bash -n OK; --dry-run OK; --monitor correctly shows header + tails log (or error when no log exists)

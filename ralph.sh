@@ -22,6 +22,7 @@ Optionen:
   --action-inbox           Pausiere den Loop wenn der Agent "ACTION_REQUIRED: <msg>" ausgibt;
                            warte auf Benutzer-Eingabe und schreibe sie nach .ralph/inbox-response.txt
   --inbox-timeout <s>      Timeout für die Benutzer-Eingabe in Sekunden (0 = unbegrenzt, Standard: 0)
+  --monitor                Zeige den Live-Log des laufenden Runs (tail -f .ralph/ralph.log)
   --dry-run                Konfiguration ausgeben, ohne den Befehl auszuführen; exit 0
   --resume                 Bei der zuletzt gespeicherten Iteration weitermachen (.ralph/iteration.txt)
   --worktree               Isolierten Git Worktree für diesen Run erstellen (Branch: ralph/run-<ts>)
@@ -49,6 +50,7 @@ Beispiel:
   ./ralph.sh --timeout 120 5 -- claude -p @{PROMPT_FILE}
   ./ralph.sh --action-inbox 5 -- claude -p @{PROMPT_FILE}
   ./ralph.sh --action-inbox --inbox-timeout 120 5 -- claude -p @{PROMPT_FILE}
+  ./ralph.sh --monitor        # in a second terminal while a run is active
 
 Hinweis:
   Standardmäßig stoppt der Loop bei einer Zeile wie:
@@ -65,6 +67,7 @@ RESUME=0
 WORKTREE=0
 ACTION_INBOX=0
 INBOX_TIMEOUT=0
+MONITOR=0
 STOP_REGEX_ARG=""
 GOAL=""
 STACK=""
@@ -79,6 +82,9 @@ while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
     -v|--version)
       echo "ralph 1.0.0"
       exit 0
+      ;;
+    --monitor)
+      MONITOR=1; shift
       ;;
     --delay)
       [[ -z "${2:-}" ]] && { echo "Fehler: --delay benötigt einen Wert."; exit 1; }
@@ -153,6 +159,31 @@ while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
       ;;
   esac
 done
+
+# Monitor mode: tail the log without needing an agent command
+if [[ $MONITOR -eq 1 ]]; then
+  RALPH_DIR=".ralph"
+  LOG_FILE="$RALPH_DIR/ralph.log"
+  ITERATION_FILE="$RALPH_DIR/iteration.txt"
+  if [[ ! -f "$LOG_FILE" ]]; then
+    echo "Fehler: Keine Log-Datei gefunden: $LOG_FILE"
+    echo "Starte zuerst einen Ralph-Run, bevor du --monitor verwendest."
+    exit 1
+  fi
+  CURRENT_ITER="?"
+  if [[ -f "$ITERATION_FILE" ]]; then
+    CURRENT_ITER="$(< "$ITERATION_FILE")"
+  fi
+  echo "============================================================"
+  echo "📡 Ralph Monitor – Live-Log"
+  printf '  %-18s %s\n' "Log-Datei:" "$LOG_FILE"
+  printf '  %-18s %s\n' "Aktuelle Iteration:" "$CURRENT_ITER"
+  echo "============================================================"
+  echo "(Drücke Ctrl+C zum Beenden)"
+  echo ""
+  tail -n 50 -f "$LOG_FILE"
+  exit 0
+fi
 
 if [[ "${1:-}" != "--" ]]; then
   echo "Fehler: '--' als Trenner fehlt."
