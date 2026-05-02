@@ -3,7 +3,7 @@
 ## Features aus wiggum-cli, die portierbar sind
 
 - [x] **SIGINT**: Trap Ctrl+C, log Unterbrechung, exit mit Code 130
-- [ ] **Delay**: `--delay <s>` Flag und `RALPH_DELAY` Umgebungsvariable (Standard 2s) für konfigurierbaren Sleep zwischen Iterationen
+- [x] **Delay**: `--delay <s>` Flag und `RALPH_DELAY` Umgebungsvariable (Standard 2s) für konfigurierbaren Sleep zwischen Iterationen
 - [ ] **Dry-run**: `--dry-run` Flag – Konfiguration ausgeben, ohne den Befehl auszuführen; exit 0
 - [ ] **Resume**: `--resume` Flag – aktuelle Iteration in `.ralph/iteration.txt` speichern; beim nächsten Start mit `--resume` dort weitermachen
 - [ ] **Named flags**: `--max-iterations <n>` und `--stop-regex <pattern>` als benannte Alternativen zu Positionalargument/Env-Var hinzufügen (Rückwärtskompatibilität bleibt erhalten)

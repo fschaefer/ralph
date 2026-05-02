@@ -12,10 +12,14 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  ./ralph.sh [iterations] -- <agent-command...>
+  ./ralph.sh [--delay <s>] [iterations] -- <agent-command...>
+
+Optionen:
+  --delay <s>   Pause zwischen Iterationen in Sekunden (Standard: 2, oder RALPH_DELAY)
 
 Beispiel:
   ./ralph.sh 3 -- pi -p "Schreib einfach nur OK"
+  ./ralph.sh --delay 5 3 -- pi -p "Schreib einfach nur OK"
 
 Hinweis:
   Standardmäßig stoppt der Loop bei einer Zeile wie:
@@ -24,13 +28,27 @@ Hinweis:
 EOF
 }
 
-[[ "${1:-}" == "-h" || "${1:-}" == "--help" ]] && { usage; exit 0; }
-
 ITERATIONS="5"
-if [[ "${1:-}" != "--" ]]; then
-  ITERATIONS="${1:-}"
-  shift || true
-fi
+DELAY="${RALPH_DELAY:-2}"
+
+# Parse named flags and optional positional iterations before '--'
+while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
+  case "$1" in
+    -h|--help)
+      usage; exit 0
+      ;;
+    --delay)
+      [[ -z "${2:-}" ]] && { echo "Fehler: --delay benötigt einen Wert."; exit 1; }
+      DELAY="$2"; shift 2
+      ;;
+    --delay=*)
+      DELAY="${1#*=}"; shift
+      ;;
+    *)
+      ITERATIONS="$1"; shift; break
+      ;;
+  esac
+done
 
 if [[ "${1:-}" != "--" ]]; then
   echo "Fehler: '--' als Trenner fehlt."
@@ -41,6 +59,11 @@ shift
 
 if ! [[ "$ITERATIONS" =~ ^[0-9]+$ ]]; then
   echo "Fehler: iterations muss eine Zahl sein."
+  exit 1
+fi
+
+if ! [[ "$DELAY" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+  echo "Fehler: delay muss eine Zahl sein."
   exit 1
 fi
 
@@ -62,6 +85,7 @@ mkdir -p "$RALPH_DIR"
 
 echo "Starte Ralph Loop"
 echo "- Iterationen: $ITERATIONS"
+echo "- Delay:       ${DELAY}s"
 printf '%s ' "- Kommando:" "${CMD[@]}"; echo
 
 i=1
@@ -87,7 +111,7 @@ while [[ $i -le $ITERATIONS ]]; do
   fi
 
   ((i++))
-  sleep 2
+  sleep "$DELAY"
 done
 
 echo "⚠️ Max. Iterationen erreicht."
