@@ -4,3 +4,4 @@
 [2026-05-02] Task: --worktree. ralph.sh: --worktree Flag; erstellt git worktree unter .ralph/worktrees/<ts> auf Branch ralph/run-<ts>; Agent läuft im Worktree; Logs/State in Worktree; Syntax-Check + Live-Test: OK.
 [2026-05-02] Task: Run Summary. ralph.sh: git diff --stat HEAD nach jeder Iteration ausgegeben (nur in Git-Repos). Syntax-Check + Dry-run: OK.
 [2026-05-02] Task: README.md. README.md erstellt mit Installation, Usage, allen Flags, PROMPT-Integration, Worktree, Resume, Stop-Signal, Exit-Codes, File-Layout, Beispielen. Syntax-Check + Dry-run: OK.
+[2026-05-02] Task: examples/. basic.sh, with-prompt.sh, with-worktree.sh erstellt. Syntax-Check: OK.
