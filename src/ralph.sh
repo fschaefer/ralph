@@ -12,16 +12,18 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  ./ralph.sh [--delay <s>] [--dry-run] [iterations] -- <agent-command...>
+  ./ralph.sh [--delay <s>] [--dry-run] [--resume] [iterations] -- <agent-command...>
 
 Optionen:
   --delay <s>   Pause zwischen Iterationen in Sekunden (Standard: 2, oder RALPH_DELAY)
   --dry-run     Konfiguration ausgeben, ohne den Befehl auszuführen; exit 0
+  --resume      Bei der zuletzt gespeicherten Iteration weitermachen (.ralph/iteration.txt)
 
 Beispiel:
   ./ralph.sh 3 -- pi -p "Schreib einfach nur OK"
   ./ralph.sh --delay 5 3 -- pi -p "Schreib einfach nur OK"
   ./ralph.sh --dry-run 3 -- pi -p "Schreib einfach nur OK"
+  ./ralph.sh --resume 3 -- pi -p "Schreib einfach nur OK"
 
 Hinweis:
   Standardmäßig stoppt der Loop bei einer Zeile wie:
@@ -33,6 +35,7 @@ EOF
 ITERATIONS="5"
 DELAY="${RALPH_DELAY:-2}"
 DRY_RUN=0
+RESUME=0
 
 # Parse named flags and optional positional iterations before '--'
 while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
@@ -49,6 +52,9 @@ while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
       ;;
     --dry-run)
       DRY_RUN=1; shift
+      ;;
+    --resume)
+      RESUME=1; shift
       ;;
     *)
       ITERATIONS="$1"; shift; break
@@ -87,6 +93,7 @@ if [[ $DRY_RUN -eq 1 ]]; then
   echo "- Iterationen: $ITERATIONS"
   echo "- Delay:       ${DELAY}s"
   echo "- Stop-Regex:  $STOP_REGEX"
+  echo "- Resume:      $( [[ $RESUME -eq 1 ]] && echo 'ja' || echo 'nein' )"
   printf '%s ' "- Kommando:" "${CMD[@]}"; echo
   exit 0
 fi
@@ -96,18 +103,28 @@ trap 'echo; echo "⚠️ Unterbrochen (SIGINT). Letzter Stand in $LAST_OUTPUT_FI
 RALPH_DIR=".ralph"
 LOG_FILE="$RALPH_DIR/ralph.log"
 LAST_OUTPUT_FILE="$RALPH_DIR/last-output.txt"
+ITERATION_FILE="$RALPH_DIR/iteration.txt"
 mkdir -p "$RALPH_DIR"
+
+i=1
+if [[ $RESUME -eq 1 && -f "$ITERATION_FILE" ]]; then
+  saved=$(< "$ITERATION_FILE")
+  if [[ "$saved" =~ ^[0-9]+$ && $saved -ge 1 && $saved -le $ITERATIONS ]]; then
+    i=$saved
+    echo "▶️  Resume: starte bei Iteration $i"
+  fi
+fi
 
 echo "Starte Ralph Loop"
 echo "- Iterationen: $ITERATIONS"
 echo "- Delay:       ${DELAY}s"
 printf '%s ' "- Kommando:" "${CMD[@]}"; echo
-
-i=1
 while [[ $i -le $ITERATIONS ]]; do
   echo "============================================================"
   echo "Iteration $i/$ITERATIONS"
   echo "============================================================"
+
+  echo "$i" > "$ITERATION_FILE"
 
   set +e
   "${CMD[@]}" 2>&1 | tee "$LAST_OUTPUT_FILE"

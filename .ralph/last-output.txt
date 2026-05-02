@@ -1,68 +1,79 @@
 ● Read PROMPT.md
   └ 61 lines read
 
-● Search (glob)
-  │ "ralph.sh"
-  └ 1 file found
+● List directory .
+  └ 6 files found
 
-● Search (glob)
-  │ "progress.txt"
-  └ 1 file found
-
-● Search (glob)
-  │ "tasks.md"
-  └ 1 file found
+● Check if tasks.md and progress.txt exist (shell)
+  │ ls /Users/florians/Projekte/ralph/tasks.md
+  │ /Users/florians/Projekte/ralph/progress.txt 2>&1
+  └ 2 lines...
 
 ● Read tasks.md
   └ 10 lines read
 
 ● Read progress.txt
-  └ 4 lines read
+  └ 5 lines read
+
+● List directory src
+  └ 1 file found
 
 ● Read ralph.sh
   │ src/ralph.sh
-  └ 118 lines read
+  └ 133 lines read
 
 ● Fetching web content https://github.com/federiconeri/wiggum-cli · url: "https://github.com/federi…
   └ Contents of https://github.com/federiconeri/wiggum-cli:
 
-● Get file or directory contents (MCP: github-mcp-server) · / · owner: "federiconeri", repo: "wiggu…
-  └ [{"type":"dir","size":0,"name":".github","path":".github","sha":"308c509...
-
-● Get file or directory contents (MCP: github-mcp-server) · /src · owner: "federiconeri", path: "/s…
+● Get file or directory contents (MCP: github-mcp-server) · src · owner: "federiconeri", repo: "wig…
   └ [{"type":"dir","size":0,"name":"__test-utils__","path":"src/__test-utils...
 
-● Get file or directory contents (MCP: github-mcp-server) · /src/agent · owner: "federiconeri", pat…
+● Get file or directory contents (MCP: github-mcp-server) · src/agent · owner: "federiconeri", path…
   └ [{"type":"dir","size":0,"name":"memory","path":"src/agent/memory","sha":...
 
-Next open task: **Dry-run** (`--dry-run` flag). I'll implement it now.
+**SCHRITT 2**: Next task: **Resume** — `--resume` flag, persist iteration in `.ralph/iteration.txt`.
 
-● Edit ralph.sh +7 -1
+**SCHRITT 3**: Implementing the feature:
+
+● Edit ralph.sh +3 -1
   └ src/ralph.sh
 
-Now add the dry-run check after argument validation:
-
-● Read ralph.sh
-  │ src/ralph.sh
-  └ L53:100 (48 lines read)
-
-● Edit ralph.sh +9
+● Edit ralph.sh +4
   └ src/ralph.sh
 
-Now verify syntax and test:
+Now update the dry-run output, the main loop setup, and iteration persistence:
 
-● Syntax check and dry-run test (shell)
-  │ cd /Users/florians/Projekte/ralph && bash -n src/ralph.sh && echo "Syntax
-  │ OK" && bash src/ralph.sh --dry-run 3 -- echo hello
-  └ 7 lines...
+● Edit ralph.sh +11 -2
+  └ src/ralph.sh
 
-Works. Now update progress.txt, mark task done in tasks.md, and commit:
+Now add iteration persistence inside the loop:
+
+● Edit ralph.sh +2
+  └ src/ralph.sh
+
+**SCHRITT 4**: Verify syntax and functionality:
+
+● Syntax check (shell)
+  │ bash -n /Users/florians/Projekte/ralph/src/ralph.sh && echo "Syntax OK"
+  └ 2 lines...
+
+● Functional tests for --resume (shell)
+  │ cd /tmp && rm -rf ralph-test && mkdir ralph-test && cd ralph-test &&
+  │
+  │ # Test 1: --resume without file -> start at 1
+  │ bash /Users/florians/Projekte/ralph/src/ralph.sh --resume 3 -- echo
+  │ "COMPLETE: true" | head -5…
+  └ 42 lines...
+
+All tests pass. **SCHRITT 5 & 6**: Update memory and commit:
+
+● Update progress.txt (shell)
+  │ cd /Users/florians/Projekte/ralph && cat >> progress.txt << 'EOF'
+  │ [2026-05-02] Task: Resume. Datei: src/ralph.sh. --resume Flag hinzugefügt:
+  │ speichert aktuelle Iteration in .ralph/iteration.txt; startet bei --resume
+  │ von dort. Syntax-Check + Funktionstests OK.
+  │ EOF
+  └ 1 line...
 
 ● Edit tasks.md +1 -1
-
-● Append to progress.txt (shell)
-  │ cd /Users/florians/Projekte/ralph && echo "[2026-05-02] Task: Dry-run.
-  │ Datei: src/ralph.sh. --dry-run Flag hinzugefügt: gibt Konfiguration aus und
-  │ beendet sich mit exit 0. Syntax-Check + Funktionstest: OK." >> progress.txt
-  └ 1 line...
 
