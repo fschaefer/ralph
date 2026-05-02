@@ -12,7 +12,7 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  ./ralph.sh [--delay <s>] [--dry-run] [--resume] [--max-iterations <n>] [--stop-regex <pattern>] [iterations] -- <agent-command...>
+  ./ralph.sh [options] [iterations] -- <agent-command...>
 
 Optionen:
   --delay <s>              Pause zwischen Iterationen in Sekunden (Standard: 2, oder RALPH_DELAY)
@@ -20,6 +20,14 @@ Optionen:
   --stop-regex <pattern>   Regex zum Erkennen des Stopp-Signals (Standard: STOP_REGEX oder ^COMPLETE:...)
   --dry-run                Konfiguration ausgeben, ohne den Befehl auszuführen; exit 0
   --resume                 Bei der zuletzt gespeicherten Iteration weitermachen (.ralph/iteration.txt)
+  --goal <text>            Projektziel (befüllt {{GOAL}} in PROMPT_TEMPLATE.md → .ralph/PROMPT.md)
+  --stack <text>           Technologie-Stack (befüllt {{STACK}} in PROMPT_TEMPLATE.md → .ralph/PROMPT.md)
+  --prompt-file <path>     Fertigen Prompt direkt übergeben (überschreibt --goal/--stack)
+
+Prompt-Integration:
+  Mit --goal und --stack wird PROMPT_TEMPLATE.md befüllt und als .ralph/PROMPT.md gespeichert.
+  Im Agent-Kommando kann {PROMPT_FILE} als Platzhalter für den Pfad verwendet werden:
+    ./ralph.sh --goal "Build a REST API" --stack "Node.js" 5 -- claude -p @{PROMPT_FILE}
 
 Beispiel:
   ./ralph.sh 3 -- pi -p "Schreib einfach nur OK"
@@ -28,6 +36,7 @@ Beispiel:
   ./ralph.sh --stop-regex '^DONE$' 3 -- pi -p "Schreib einfach nur OK"
   ./ralph.sh --dry-run 3 -- pi -p "Schreib einfach nur OK"
   ./ralph.sh --resume 3 -- pi -p "Schreib einfach nur OK"
+  ./ralph.sh --goal "Baue eine REST API" --stack "Node.js, Express" 5 -- claude -p @{PROMPT_FILE}
 
 Hinweis:
   Standardmäßig stoppt der Loop bei einer Zeile wie:
@@ -41,6 +50,9 @@ DELAY="${RALPH_DELAY:-2}"
 DRY_RUN=0
 RESUME=0
 STOP_REGEX_ARG=""
+GOAL=""
+STACK=""
+PROMPT_FILE_OVERRIDE=""
 
 # Parse named flags and optional positional iterations before '--'
 while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
@@ -75,6 +87,27 @@ while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
     --resume)
       RESUME=1; shift
       ;;
+    --goal)
+      [[ -z "${2:-}" ]] && { echo "Fehler: --goal benötigt einen Wert."; exit 1; }
+      GOAL="$2"; shift 2
+      ;;
+    --goal=*)
+      GOAL="${1#*=}"; shift
+      ;;
+    --stack)
+      [[ -z "${2:-}" ]] && { echo "Fehler: --stack benötigt einen Wert."; exit 1; }
+      STACK="$2"; shift 2
+      ;;
+    --stack=*)
+      STACK="${1#*=}"; shift
+      ;;
+    --prompt-file)
+      [[ -z "${2:-}" ]] && { echo "Fehler: --prompt-file benötigt einen Wert."; exit 1; }
+      PROMPT_FILE_OVERRIDE="$2"; shift 2
+      ;;
+    --prompt-file=*)
+      PROMPT_FILE_OVERRIDE="${1#*=}"; shift
+      ;;
     *)
       ITERATIONS="$1"; shift; break
       ;;
@@ -107,19 +140,48 @@ fi
 CMD=("$@")
 STOP_REGEX="${STOP_REGEX_ARG:-${STOP_REGEX:-^COMPLETE:[[:space:]]*true$}}"
 
+# Determine the effective prompt file path
+RALPH_DIR=".ralph"
+GENERATED_PROMPT_FILE="$RALPH_DIR/PROMPT.md"
+EFFECTIVE_PROMPT_FILE=""
+
+if [[ -n "$PROMPT_FILE_OVERRIDE" ]]; then
+  EFFECTIVE_PROMPT_FILE="$PROMPT_FILE_OVERRIDE"
+elif [[ -n "$GOAL" || -n "$STACK" ]]; then
+  TEMPLATE_FILE="PROMPT_TEMPLATE.md"
+  if [[ ! -f "$TEMPLATE_FILE" ]]; then
+    echo "Fehler: PROMPT_TEMPLATE.md nicht gefunden. Bitte im Projektverzeichnis ablegen."
+    exit 1
+  fi
+  mkdir -p "$RALPH_DIR"
+  sed \
+    -e "s|{{GOAL}}|${GOAL}|g" \
+    -e "s|{{STACK}}|${STACK}|g" \
+    "$TEMPLATE_FILE" > "$GENERATED_PROMPT_FILE"
+  EFFECTIVE_PROMPT_FILE="$GENERATED_PROMPT_FILE"
+fi
+
+# Replace {PROMPT_FILE} placeholder in CMD args
+if [[ -n "$EFFECTIVE_PROMPT_FILE" ]]; then
+  for i in "${!CMD[@]}"; do
+    CMD[$i]="${CMD[$i]//\{PROMPT_FILE\}/$EFFECTIVE_PROMPT_FILE}"
+  done
+fi
+
 if [[ $DRY_RUN -eq 1 ]]; then
   echo "🔍 Dry-run – Konfiguration (kein Befehl wird ausgeführt):"
   echo "- Iterationen: $ITERATIONS"
   echo "- Delay:       ${DELAY}s"
   echo "- Stop-Regex:  $STOP_REGEX"
   echo "- Resume:      $( [[ $RESUME -eq 1 ]] && echo 'ja' || echo 'nein' )"
+  [[ -n "$EFFECTIVE_PROMPT_FILE" ]] && echo "- Prompt-Datei: $EFFECTIVE_PROMPT_FILE"
   printf '%s ' "- Kommando:" "${CMD[@]}"; echo
   exit 0
 fi
 
 trap 'echo; echo "⚠️ Unterbrochen (SIGINT). Letzter Stand in $LAST_OUTPUT_FILE"; exit 130' INT
 
-RALPH_DIR=".ralph"
+mkdir -p "$RALPH_DIR"
 LOG_FILE="$RALPH_DIR/ralph.log"
 LAST_OUTPUT_FILE="$RALPH_DIR/last-output.txt"
 ITERATION_FILE="$RALPH_DIR/iteration.txt"
@@ -140,6 +202,7 @@ printf '  %-18s %s\n' "Delay:"        "${DELAY}s"
 printf '  %-18s %s\n' "Stop-Regex:"   "$STOP_REGEX"
 printf '  %-18s %s\n' "Resume:"       "$( [[ $RESUME -eq 1 ]] && echo 'ja' || echo 'nein' )"
 printf '  %-18s %s\n' "Log-Datei:"    "$LOG_FILE"
+[[ -n "$EFFECTIVE_PROMPT_FILE" ]] && printf '  %-18s %s\n' "Prompt-Datei:" "$EFFECTIVE_PROMPT_FILE"
 printf '  Kommando:          '
 printf '%s ' "${CMD[@]}"; echo
 echo ""

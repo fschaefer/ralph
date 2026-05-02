@@ -1,88 +1,104 @@
 ● Read PROMPT.md
   └ 64 lines read
 
-● List project files (shell)
-  │ ls /Users/florians/Projekte/ralph/
-  └ 2 lines...
+● List directory .
+  └ 8 files found
 
-● Read tasks.md (shell)
-  │ cat /Users/florians/Projekte/ralph/tasks.md 2>/dev/null || echo
-  │ "FILE_NOT_FOUND"
-  └ 2 lines...
+● Search (glob)
+  │ "tasks.md"
+  └ 1 file found
 
-● Read progress.txt (shell)
-  │ cat /Users/florians/Projekte/ralph/progress.txt 2>/dev/null || echo
-  │ "FILE_NOT_FOUND"
-  └ 2 lines...
+● Search (glob)
+  │ "progress.txt"
+  └ 1 file found
 
-● Read ralph.sh and list src/ (shell)
-  │ cat /Users/florians/Projekte/ralph/src/ralph.sh && echo "---" && ls
-  │ /Users/florians/Projekte/ralph/src/
-  └ 178 lines...
+● Read tasks.md
+  └ 20 lines read
+
+● Read progress.txt
+  └ 2 lines read
+
+● Read ralph.sh
+  └ 175 lines read
+
+● Read PROMPT_TEMPLATE.md
+  └ 52 lines read
 
 ● Fetching web content https://github.com/federiconeri/wiggum-cli · url: "https://github.com/federi…
   └ Contents of https://github.com/federiconeri/wiggum-cli:
 
-● Fetching web content https://github.com/federiconeri/wiggum-cli · url: "https://github.com/federi…
-  └ Contents of https://github.com/federiconeri/wiggum-cli:
+**SCHRITT 2**: Nächster Task: **PROMPT-Integration** (`--goal`, `--stack`, `--prompt-file` Flags + Template-Befüllung).
 
-● Read PROMPT_TEMPLATE.md (shell)
-  │ cat /Users/florians/Projekte/ralph/src/PROMPT_TEMPLATE.md
-  └ 53 lines...
+**SCHRITT 3**: Implementierung.
 
-● Check git status (shell)
-  │ cd /Users/florians/Projekte/ralph && git log --oneline -5 && git status
-  └ 21 lines...
+First, update PROMPT_TEMPLATE.md with proper placeholders:
 
-● Check last output from last iteration (shell)
-  │ cd /Users/florians/Projekte/ralph && git show HEAD:.ralph/last-output.txt
-  │ 2>/dev/null | tail -30 || echo "not in git"
-  └ 29 lines...
+● Edit PROMPT_TEMPLATE.md +3
 
-● Read tasks.md and progress.txt from last commit (shell)
-  │ cd /Users/florians/Projekte/ralph && git show HEAD:tasks.md 2>/dev/null ||
-  │ echo "No tasks.md in HEAD" && git show HEAD:progress.txt 2>/dev/null || echo
-  │ "No progress.txt in HEAD"
-  └ 19 lines...
+Now update `ralph.sh` with PROMPT-Integration:
 
-**Iteration 1 – State Recovery**: Es sind keine `tasks.md`/`progress.txt` vorhanden. Vorherige Iteration hat bereits alle Basis-Features implementiert. Erstelle jetzt die neue Task-Liste und beginne mit dem nächsten Task.
+✗ edit edit file · old_str: "usage() {   cat <<'EOF' Usage:   ./ralph.sh [--delay <s>] [-…", new_st…
+  └ "path": Required
 
-**SCHRITT 1 & 2**: Erstelle tasks.md/progress.txt, wähle ersten offenen Task.
+● Edit ralph.sh +10 -1
 
-● Create progress.txt +2
+Now add the new variables and parse flags:
 
-● Create tasks.md +21
+● Edit ralph.sh +3
 
-**SCHRITT 3: Implementierung – Task: Projektstruktur**
+Now add the new flags to the argument parsing loop:
 
-● Move files from src/ to root, remove src/ (shell)
-  │ cd /Users/florians/Projekte/ralph && cp src/ralph.sh ralph.sh && cp
-  │ src/PROMPT_TEMPLATE.md PROMPT_TEMPLATE.md && rm -rf src/ && ls -la
-  └ 11 lines...
+● Edit ralph.sh +21
 
-● Check existing .gitignore (shell)
-  │ cat /Users/florians/Projekte/ralph/.gitignore 2>/dev/null || echo
-  │ "NO_GITIGNORE"
+Now add the PROMPT generation logic and CMD substitution. I'll add it after the validation block and before the dry-run check:
+
+● Edit ralph.sh +28
+
+Now update the dry-run section and config display to include the new fields. First, fix the dry-run to show prompt info, and remove the duplicate `RALPH_DIR` definition later:
+
+● Edit ralph.sh +1
+
+Now remove the duplicate `RALPH_DIR` definition further down:
+
+● Edit ralph.sh +1 -1
+
+Update config display to show prompt file if set:
+
+● Edit ralph.sh +1
+
+**SCHRITT 4**: Verifikation:
+
+● Syntax check ralph.sh (shell)
+  │ cd /Users/florians/Projekte/ralph && bash -n ralph.sh && echo "Syntax OK"
   └ 2 lines...
 
-● Create .gitignore +3
+● Test dry-run and PROMPT-Integration (shell)
+  │ cd /Users/florians/Projekte/ralph && bash ralph.sh --dry-run 3 -- echo hello
+  │ && echo "---" && bash ralph.sh --goal "Build a REST API" --stack "Node.js,
+  │ Express" --dry-run 3 -- echo "{PROMPT_FILE}"
+  └ 15 lines...
 
-**SCHRITT 4: Verifikation**
+● Check generated PROMPT.md (shell)
+  │ cd /Users/florians/Projekte/ralph && bash ralph.sh --goal "Build a REST API"
+  │ --stack "Node.js, Express" --dry-run 3 -- echo "{PROMPT_FILE}" && cat
+  │ .ralph/PROMPT.md | head -10
+  └ 18 lines...
 
-● Syntax check and dry-run test (shell)
-  │ cd /Users/florians/Projekte/ralph && bash -n ralph.sh && echo "Syntax OK" &&
-  │ bash ralph.sh --dry-run 3 -- echo hi
-  └ 8 lines...
+Works perfectly. **SCHRITT 5**: Update memory and tasks.md:
 
-**SCHRITT 5: Gedächtnis aktualisieren**
+● Update progress.txt (shell)
+  │ echo "[2026-05-02] Task: PROMPT-Integration. ralph.sh: --goal, --stack,
+  │ --prompt-file Flags; PROMPT_TEMPLATE.md befüllt → .ralph/PROMPT.md;
+  │ {PROMPT_FILE} in CMD-Args ersetzt. PROMPT_TEMPLATE.md: {{GOAL}} und
+  │ {{STACK}} Platzhalter gesetzt. Syntax-Check + Dry-run: OK." >>
+  │ /Users/florians/Projekte/ralph/progress.txt
+  └ 1 line...
 
 ● Edit tasks.md +1 -1
 
-● Update progress.txt (shell)
-  │ echo "[2026-05-02] Task: Projektstruktur. ralph.sh + PROMPT_TEMPLATE.md aus
-  │ src/ ins Root verschoben. src/ gelöscht. .gitignore für .ralph/ erstellt.
-  │ Syntax-Check + Dry-run: OK." >> /Users/florians/Projekte/ralph/progress.txt
-  └ 1 line...
+Also mark PROMPT_TEMPLATE.md task as done since we handled it:
 
-**SCHRITT 6: Git Commit**
+● Edit tasks.md +1 -1
+
+**SCHRITT 6**: Git Commit:
 

@@ -1,2 +1,3 @@
 [2026-05-02] Vorherige Iterationen: SIGINT, --delay, --dry-run, --resume, --max-iterations, --stop-regex, Config-Display implementiert. tasks.md/progress.txt wurden gelöscht (unklar warum). Wiederherstellt.
 [2026-05-02] Task: Projektstruktur. ralph.sh + PROMPT_TEMPLATE.md aus src/ ins Root verschoben. src/ gelöscht. .gitignore für .ralph/ erstellt. Syntax-Check + Dry-run: OK.
+[2026-05-02] Task: PROMPT-Integration. ralph.sh: --goal, --stack, --prompt-file Flags; PROMPT_TEMPLATE.md befüllt → .ralph/PROMPT.md; {PROMPT_FILE} in CMD-Args ersetzt. PROMPT_TEMPLATE.md: {{GOAL}} und {{STACK}} Platzhalter gesetzt. Syntax-Check + Dry-run: OK.
