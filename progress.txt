@@ -1,0 +1,3 @@
+# Ralph Loop – Fortschrittslog
+
+[2026-05-02] Task: SIGINT-Trap. Datei: src/ralph.sh. Trap auf INT gesetzt → exit 130. Syntax-Check: OK. Keine offenen Fehler.
