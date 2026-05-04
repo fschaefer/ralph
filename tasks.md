@@ -1,0 +1,8 @@
+- [x] Reproduce and document current help output mismatch between `./ralph` and `./ralph.sh`
+- [x] Align help text implementation so both entrypoints show the same options and descriptions
+- [x] Verify behavior with `./ralph --help` and `./ralph.sh --help`
+- [x] Run project checks (`go test ./...`) to ensure no regressions
+- [x] Update docs if needed to reflect final help behavior
+- [x] Make default no-argument behavior consistent: no help text by default, only short error on stderr
+- [x] Change `./ralph.sh` no-argument behavior to print help/usage output
+- [x] Change `./ralph` (Go binary) no-argument behavior to print help/usage output (stdout, exit 0)

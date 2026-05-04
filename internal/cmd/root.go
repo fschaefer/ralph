@@ -105,6 +105,12 @@ func Execute() {
 	fs.BoolVar(&cfg.ActionInbox, "action-inbox", false, `Pause loop when agent outputs "ACTION_REQUIRED: <msg>"; wait for user input`)
 	fs.IntVar(&cfg.InboxTimeout, "inbox-timeout", 0, "Timeout for user input in seconds (0 = unlimited; requires --action-inbox)")
 
+	// No arguments: print help to stdout and exit 0 (mirrors ralph.sh behaviour).
+	if len(os.Args) == 1 {
+		fmt.Print(usageText)
+		os.Exit(0)
+	}
+
 	// Split os.Args at '--' to separate ralph flags from agent command.
 	ralphArgs, agentArgs := splitAtDashDash(os.Args[1:])
 
