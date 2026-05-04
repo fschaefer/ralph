@@ -355,28 +355,28 @@ fi
 
 if [[ $DRY_RUN -eq 1 ]]; then
   echo "🔍 Dry-run – configuration (no command will be executed):"
-  echo "- Iterations:   $ITERATIONS"
-  echo "- Delay:        ${DELAY}s"
-  echo "- Timeout:      $( [[ $TIMEOUT -gt 0 ]] && echo "${TIMEOUT}s" || echo 'disabled' )"
-  echo "- Stop regex:   $STOP_REGEX"
-  echo "- Resume:       $( [[ $RESUME -eq 1 ]] && echo 'yes' || echo 'no' )"
-  echo "- Worktree:     $( [[ $WORKTREE -eq 1 ]] && echo 'yes' || echo 'no' )"
-  echo "- Action inbox: $( [[ $ACTION_INBOX -eq 1 ]] && echo "yes (timeout: $( [[ $INBOX_TIMEOUT -gt 0 ]] && echo "${INBOX_TIMEOUT}s" || echo 'unlimited' ))" || echo 'no' )"
+  printf '  %-14s %s\n' "Iterations:" "$ITERATIONS"
+  printf '  %-14s %s\n' "Delay:" "${DELAY}s"
+  printf '  %-14s %s\n' "Timeout:" "$( [[ $TIMEOUT -gt 0 ]] && echo "${TIMEOUT}s" || echo 'disabled' )"
+  printf '  %-14s %s\n' "Stop regex:" "$STOP_REGEX"
+  printf '  %-14s %s\n' "Resume:" "$( [[ $RESUME -eq 1 ]] && echo 'yes' || echo 'no' )"
+  printf '  %-14s %s\n' "Worktree:" "$( [[ $WORKTREE -eq 1 ]] && echo 'yes' || echo 'no' )"
+  printf '  %-14s %s\n' "Action inbox:" "$( [[ $ACTION_INBOX -eq 1 ]] && echo "yes (timeout: $( [[ $INBOX_TIMEOUT -gt 0 ]] && echo "${INBOX_TIMEOUT}s" || echo 'unlimited' ))" || echo 'no' )"
   if [[ -n "$EXTEND_SPEC_NAME" ]]; then
-    echo "- Extend spec:  .ralph/specs/${EXTEND_SPEC_NAME}.md"
+    printf '  %-14s %s\n' "Extend spec:" ".ralph/specs/${EXTEND_SPEC_NAME}.md"
   fi
   if [[ -n "$EFFECTIVE_PROMPT_FILE" ]]; then
     if [[ -n "$PROMPT_FILE_OVERRIDE" ]]; then
-      echo "- Prompt file:  $EFFECTIVE_PROMPT_FILE (--prompt-file)"
+      printf '  %-14s %s\n' "Prompt file:" "$EFFECTIVE_PROMPT_FILE (--prompt-file)"
     elif [[ -n "$SPEC_NAME" ]]; then
-      echo "- Prompt file:  $EFFECTIVE_PROMPT_FILE (--spec $SPEC_NAME)"
+      printf '  %-14s %s\n' "Prompt file:" "$EFFECTIVE_PROMPT_FILE (--spec $SPEC_NAME)"
     elif [[ -f "PROMPT_TEMPLATE.md" ]]; then
-      echo "- Prompt file:  $EFFECTIVE_PROMPT_FILE (from PROMPT_TEMPLATE.md)"
+      printf '  %-14s %s\n' "Prompt file:" "$EFFECTIVE_PROMPT_FILE (from PROMPT_TEMPLATE.md)"
     else
-      echo "- Prompt file:  $EFFECTIVE_PROMPT_FILE (built-in template)"
+      printf '  %-14s %s\n' "Prompt file:" "$EFFECTIVE_PROMPT_FILE (built-in template)"
     fi
   fi
-  printf '%s ' "- Command:" "${CMD[@]}"; echo
+  printf '  %-14s %s\n' "Command:" "${CMD[*]}"
   exit 0
 fi
 

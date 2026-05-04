@@ -13,7 +13,7 @@ func defineFlags(cmd *cobra.Command) {
 	f.IntP("max-iterations", "n", 5, "Maximum number of loop iterations")
 	f.Float64("delay", 2, "Pause between iterations in seconds (env: RALPH_DELAY)")
 	f.Int("timeout", 0, "Per-iteration timeout in seconds; kills agent after <s>s (0 = disabled)")
-	f.String("stop-regex", "", "Regex that triggers a successful stop (env: STOP_REGEX, default: ^COMPLETE:\\s*true$)")
+	f.String("stop-regex", "", "Regex that triggers a successful stop (env: STOP_REGEX, default: ^COMPLETE:[[:space:]]*true$)")
 	f.BoolP("quiet", "q", false, "Suppress config header and iteration banners")
 	f.Bool("dry-run", false, "Print configuration and exit without running the agent")
 	f.Bool("resume", false, "Resume from last saved iteration (.ralph/iteration.txt)")

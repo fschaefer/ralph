@@ -16,6 +16,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
 	"github.com/fschaefer/ralph/internal/config"
+	"github.com/fschaefer/ralph/internal/prompt"
 )
 
 // iterStatus records the outcome of a single iteration.
@@ -278,8 +279,8 @@ func printConfigHeader(cfg *config.Config) {
 		row("Extend spec:", ".ralph/specs/"+cfg.ExtendSpecName+".md")
 	}
 	row("Log file:", cfg.LogFile)
-	if cfg.EffectivePromptFile != "" {
-		row("Prompt file:", cfg.EffectivePromptFile)
+	if src := prompt.PromptSource(cfg); src != "" {
+		row("Prompt file:", src)
 	}
 	fmt.Printf("  %s %s\n", tableKeyStyle.Render("Command:          "), tableValStyle.Render(strings.Join(cfg.AgentCmd, " ")))
 	fmt.Println()

@@ -46,7 +46,7 @@ func run(cmd *cobra.Command, args []string) error {
 		}
 	}
 	if cfg.StopRegex == "" {
-		cfg.StopRegex = `^COMPLETE:\s*true$`
+		cfg.StopRegex = `^COMPLETE:[[:space:]]*true$`
 	}
 	if cfg.Quiet, err = cmd.Flags().GetBool("quiet"); err != nil {
 		return err
