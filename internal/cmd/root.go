@@ -39,4 +39,6 @@ func Execute() {
 func init() {
 	// All flags are defined in flags.go; run logic lives in run.go.
 	defineFlags(rootCmd)
+	// Match ralph.sh --version output format: "ralph <version>"
+	rootCmd.SetVersionTemplate("ralph {{.Version}}\n")
 }

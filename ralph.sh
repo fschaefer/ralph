@@ -49,7 +49,7 @@ Examples:
   ./ralph.sh --delay 5 3 -- claude -p "Just output OK"
   ./ralph.sh --stop-regex '^DONE$' 3 -- claude -p "Just output OK"
   ./ralph.sh --dry-run 3 -- claude -p "Just output OK"
-  ./ralph.sh --resume 3 -- claude -p @.ralph/PROMPT.md
+  ./ralph.sh --resume 3 -- claude -p @{PROMPT_FILE}
   ./ralph.sh --worktree 5 -- claude -p @{PROMPT_FILE}
   ./ralph.sh --goal "Build a REST API" --stack "Node.js, Express" 5 -- claude -p @{PROMPT_FILE}
   ./ralph.sh --timeout 120 5 -- claude -p @{PROMPT_FILE}
@@ -89,7 +89,7 @@ while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
       usage; exit 0
       ;;
     -v|--version)
-      echo "ralph 1.0.0"
+      echo "ralph 2.0.0"
       exit 0
       ;;
     --monitor)
