@@ -122,16 +122,17 @@ func run(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// --extend-spec: inject new task before starting the loop
-	if cfg.ExtendSpecName != "" {
-		if err := runner.ExtendSpec(cfg); err != nil {
+	// --worktree: set up isolated git worktree
+	if cfg.Worktree {
+		if err := runner.SetupWorktree(cfg); err != nil {
 			return err
 		}
 	}
 
-	// --worktree: set up isolated git worktree
-	if cfg.Worktree {
-		if err := runner.SetupWorktree(cfg); err != nil {
+	// --extend-spec: inject new task after entering the worktree (if any),
+	// so the extension writes to the correct tasks.md (same behaviour as ralph.sh).
+	if cfg.ExtendSpecName != "" {
+		if err := runner.ExtendSpec(cfg); err != nil {
 			return err
 		}
 	}

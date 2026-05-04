@@ -13,7 +13,7 @@ import (
 func DryRun(cfg *config.Config) {
 	fmt.Println(ui.Header("🔍 Dry-run – configuration (no command will be executed):"))
 	row := func(k, v string) {
-		fmt.Printf("  %s  %s\n", ui.Gray(fmt.Sprintf("%-14s", k)), v)
+		fmt.Printf("  %s %s\n", ui.Gray(fmt.Sprintf("%-14s", k)), v)
 	}
 	row("Iterations:", fmt.Sprintf("%d", cfg.Iterations))
 	row("Delay:", fmt.Sprintf("%gs", cfg.Delay))
@@ -40,5 +40,5 @@ func DryRun(cfg *config.Config) {
 	if src := prompt.PromptSource(cfg); src != "" {
 		row("Prompt file:", src)
 	}
-	fmt.Printf("  %s  %s\n", ui.Gray(fmt.Sprintf("%-14s", "Command:")), strings.Join(cfg.AgentCmd, " "))
+	fmt.Printf("  %s %s\n", ui.Gray(fmt.Sprintf("%-14s", "Command:")), strings.Join(cfg.AgentCmd, " "))
 }

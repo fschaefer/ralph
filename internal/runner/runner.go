@@ -213,13 +213,13 @@ func newLogger(logFile string) *fileLogger {
 
 func (l *fileLogger) info(msg string) {
 	if l.f != nil {
-		fmt.Fprintf(l.f, "%s INFO %s\n", time.Now().Format("2006/01/02 15:04:05"), msg)
+		fmt.Fprintf(l.f, "[%s] %s\n", time.Now().Format("2006-01-02 15:04:05"), msg)
 	}
 }
 
 func (l *fileLogger) warn(msg string) {
 	if l.f != nil {
-		fmt.Fprintf(l.f, "%s WARN %s\n", time.Now().Format("2006/01/02 15:04:05"), msg)
+		fmt.Fprintf(l.f, "[%s] WARN %s\n", time.Now().Format("2006-01-02 15:04:05"), msg)
 	}
 }
 
@@ -261,7 +261,7 @@ func printConfigHeader(cfg *config.Config) {
 	fmt.Println(ui.Sep())
 	fmt.Printf("  %s\n\n", ui.Header("Ralph"))
 	row := func(k, v string) {
-		fmt.Printf("  %s  %s\n", ui.Gray(fmt.Sprintf("%-18s", k)), v)
+		fmt.Printf("  %s %s\n", ui.Gray(fmt.Sprintf("%-18s", k)), v)
 	}
 	row("Iterations:", strconv.Itoa(cfg.Iterations))
 	row("Delay:", fmt.Sprintf("%gs", cfg.Delay))
@@ -293,7 +293,7 @@ func printConfigHeader(cfg *config.Config) {
 	if src := prompt.PromptSource(cfg); src != "" {
 		row("Prompt file:", src)
 	}
-	fmt.Printf("  %s  %s\n", ui.Gray(fmt.Sprintf("%-18s", "Command:")), strings.Join(cfg.AgentCmd, " "))
+	fmt.Printf("  %s %s\n", ui.Gray(fmt.Sprintf("%-18s", "Command:")), strings.Join(cfg.AgentCmd, " "))
 	fmt.Println()
 }
 
