@@ -57,6 +57,7 @@ The `--` separator is **required** to distinguish ralph flags from the agent com
 | `--stack <text>` | – | Tech stack – fills `{{STACK}}` in `PROMPT_TEMPLATE.md` |
 | `--prompt-file <path>` | – | Use a ready-made prompt file (overrides `--goal`/`--stack`) |
 | `--spec <name>` | – | Load `.ralph/specs/<name>.md` as prompt; use `{SPEC_FILE}` in the agent command |
+| `--extend-spec <name>` | – | Resume a completed project: appends a new task to `tasks.md` referencing `.ralph/specs/<name>.md` |
 | `-h`, `--help` | – | Show help and exit |
 
 ---
@@ -92,6 +93,37 @@ You can also provide a hand-crafted prompt file directly:
 ### Minimal prompt for the agent
 
 The agent only needs to output `COMPLETE: true` on its own line when all tasks are done. Everything else – task tracking, progress log, git commits – is managed by the agent itself via `tasks.md` and `progress.txt` (as defined in the built-in template).
+
+---
+
+## Extending a Completed Project
+
+Once a project outputs `COMPLETE: true`, you can reopen it for new requirements using `--extend-spec`.
+
+1. Create a spec file describing the new requirements:
+
+```bash
+mkdir -p .ralph/specs
+cat > .ralph/specs/add-search.md <<'EOF'
+Add a full-text search endpoint to the existing REST API:
+- GET /users/search?q=<query> – returns matching users
+- Case-insensitive substring match on name and email
+- Returns the same user object shape as GET /users/:id
+EOF
+```
+
+2. Run ralph with `--extend-spec`:
+
+```bash
+./ralph.sh --extend-spec add-search 5 -- claude -p @.ralph/PROMPT.md
+```
+
+ralph will:
+- Append a new `- [ ]` task to `tasks.md` pointing to the spec file
+- Append an entry to `progress.txt` recording the extension
+- Run the loop normally — the agent reads the new task, reads the spec, and implements it
+
+The agent will output `COMPLETE: true` again once the new tasks are done.
 
 ---
 

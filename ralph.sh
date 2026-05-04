@@ -32,6 +32,8 @@ Options:
   --prompt-file <path>     Use a ready-made prompt file directly (overrides --goal/--stack)
   --spec <name>            Load .ralph/specs/<name>.md as prompt;
                            use {SPEC_FILE} in the agent command as a placeholder
+  --extend-spec <name>     Resume a completed project: appends a new task to tasks.md
+                           referencing .ralph/specs/<name>.md so the agent picks it up
   -v, --version            Print version number and exit
 
 Prompt integration:
@@ -78,6 +80,7 @@ GOAL=""
 STACK=""
 PROMPT_FILE_OVERRIDE=""
 SPEC_NAME=""
+EXTEND_SPEC_NAME=""
 
 # Parse named flags and optional positional iterations before '--'
 while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
@@ -169,6 +172,13 @@ while [[ $# -gt 0 && "${1:-}" != "--" ]]; do
       ;;
     --spec=*)
       SPEC_NAME="${1#*=}"; shift
+      ;;
+    --extend-spec)
+      [[ -z "${2:-}" ]] && { echo "Error: --extend-spec requires a value."; exit 1; }
+      EXTEND_SPEC_NAME="$2"; shift 2
+      ;;
+    --extend-spec=*)
+      EXTEND_SPEC_NAME="${1#*=}"; shift
       ;;
     *)
       ITERATIONS="$1"; shift; break
@@ -352,6 +362,9 @@ if [[ $DRY_RUN -eq 1 ]]; then
   echo "- Resume:       $( [[ $RESUME -eq 1 ]] && echo 'yes' || echo 'no' )"
   echo "- Worktree:     $( [[ $WORKTREE -eq 1 ]] && echo 'yes' || echo 'no' )"
   echo "- Action inbox: $( [[ $ACTION_INBOX -eq 1 ]] && echo "yes (timeout: $( [[ $INBOX_TIMEOUT -gt 0 ]] && echo "${INBOX_TIMEOUT}s" || echo 'unlimited' ))" || echo 'no' )"
+  if [[ -n "$EXTEND_SPEC_NAME" ]]; then
+    echo "- Extend spec:  .ralph/specs/${EXTEND_SPEC_NAME}.md"
+  fi
   if [[ -n "$EFFECTIVE_PROMPT_FILE" ]]; then
     if [[ -n "$PROMPT_FILE_OVERRIDE" ]]; then
       echo "- Prompt file:  $EFFECTIVE_PROMPT_FILE (--prompt-file)"
@@ -462,6 +475,9 @@ if [[ $QUIET -eq 0 ]]; then
   printf '  %-18s %s\n' "Resume:"       "$( [[ $RESUME -eq 1 ]] && echo 'yes' || echo 'no' )"
   printf '  %-18s %s\n' "Worktree:"     "$( [[ $WORKTREE -eq 1 ]] && echo "$WORKTREE_PATH" || echo 'no' )"
   printf '  %-18s %s\n' "Action inbox:" "$( [[ $ACTION_INBOX -eq 1 ]] && echo "yes (timeout: $( [[ $INBOX_TIMEOUT -gt 0 ]] && echo "${INBOX_TIMEOUT}s" || echo 'unlimited' ))" || echo 'no' )"
+  if [[ -n "$EXTEND_SPEC_NAME" ]]; then
+    printf '  %-18s %s\n' "Extend spec:" ".ralph/specs/${EXTEND_SPEC_NAME}.md"
+  fi
   printf '  %-18s %s\n' "Log file:"     "$LOG_FILE"
   if [[ -n "$EFFECTIVE_PROMPT_FILE" ]]; then
     if [[ -n "$PROMPT_FILE_OVERRIDE" ]]; then
@@ -480,6 +496,23 @@ if [[ $QUIET -eq 0 ]]; then
 fi
 
 RUN_START_TS=$(date +%s)
+
+# Extend-spec: inject new tasks into tasks.md so the agent can pick them up
+if [[ -n "$EXTEND_SPEC_NAME" ]]; then
+  EXTEND_SPEC_FILE="${RALPH_DIR}/specs/${EXTEND_SPEC_NAME}.md"
+  if [[ ! -f "$EXTEND_SPEC_FILE" ]]; then
+    echo "Error: extend-spec file not found: $EXTEND_SPEC_FILE"
+    exit 1
+  fi
+  TASKS_FILE="tasks.md"
+  PROGRESS_FILE="progress.txt"
+  EXTEND_TIMESTAMP="$(date '+%Y-%m-%d %H:%M:%S')"
+  printf '\n## Extension: %s (%s)\n\n- [ ] Implement new requirements from .ralph/specs/%s.md (read the file for details)\n' \
+    "$EXTEND_SPEC_NAME" "$EXTEND_TIMESTAMP" "$EXTEND_SPEC_NAME" >> "$TASKS_FILE"
+  printf '[%s] Extension added via --extend-spec %s\n' \
+    "$EXTEND_TIMESTAMP" "$EXTEND_SPEC_NAME" >> "$PROGRESS_FILE"
+  echo "📎 Extension injected into $TASKS_FILE from $EXTEND_SPEC_FILE"
+fi
 
 while [[ $i -le $ITERATIONS ]]; do
   echo "$i" > "$ITERATION_FILE"
