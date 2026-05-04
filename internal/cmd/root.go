@@ -15,18 +15,57 @@ import (
 
 const version = "2.0.0"
 
-const usageHeader = `Usage: ralph [options] [iterations] -- <agent-command...>
-
-Minimal autonomous AI agent loop runner.
-
-The '--' separator is REQUIRED to distinguish ralph flags from the agent command.
-
-Examples:
-  ralph 5 -- claude -p @{PROMPT_FILE}
-  ralph --goal "Build a REST API" --stack "Go, chi" 10 -- claude -p @{PROMPT_FILE}
-  ralph --monitor
+const usageText = `Usage:
+  ralph [options] [iterations] -- <agent-command...>
 
 Options:
+  --delay <s>              Pause between iterations in seconds (default: 2, or $RALPH_DELAY)
+  --max-iterations <n>     Maximum number of iterations (alias for positional argument)
+  --timeout <s>            Per-iteration timeout in seconds; kills agent after <s>s (0 = disabled)
+  --stop-regex <pattern>   Regex that triggers a successful stop (default: $STOP_REGEX or ^COMPLETE:...)
+  --action-inbox           Pause loop when agent outputs "ACTION_REQUIRED: <msg>";
+                           wait for user input and write it to .ralph/inbox-response.txt
+  --inbox-timeout <s>      Timeout for user input in seconds (0 = unlimited, default: 0)
+  --monitor                Tail .ralph/ralph.log in real-time (open in a second terminal)
+  --quiet, -q              Suppress config header and iteration banners
+  --dry-run                Print configuration and exit without running the agent
+  --resume                 Resume from last saved iteration (.ralph/iteration.txt)
+  --worktree               Create an isolated Git worktree for this run (branch: ralph/run-<ts>)
+  --goal <text>            Project goal (fills {{GOAL}} in prompt template → .ralph/PROMPT.md)
+  --stack <text>           Tech stack (fills {{STACK}} in prompt template → .ralph/PROMPT.md)
+  --prompt-file <path>     Use a ready-made prompt file directly (overrides --goal/--stack)
+  --spec <name>            Load .ralph/specs/<name>.md as prompt;
+                           use {SPEC_FILE} in the agent command as a placeholder
+  --extend-spec <name>     Resume a completed project: appends a new task to tasks.md
+                           referencing .ralph/specs/<name>.md so the agent picks it up
+  -v, --version            Print version number and exit
+
+Prompt integration:
+  With --goal and --stack the prompt template is filled and saved as .ralph/PROMPT.md.
+  The template is embedded in the binary; an external PROMPT_TEMPLATE.md in the project
+  directory takes priority over the built-in one.
+  Use {PROMPT_FILE} anywhere in your agent command as a placeholder for the path:
+    ralph --goal "Build a REST API" --stack "Node.js" 5 -- claude -p @{PROMPT_FILE}
+
+Examples:
+  ralph 3 -- claude -p "Just output OK"
+  ralph --max-iterations 3 -- claude -p "Just output OK"
+  ralph --delay 5 3 -- claude -p "Just output OK"
+  ralph --stop-regex '^DONE$' 3 -- claude -p "Just output OK"
+  ralph --dry-run 3 -- claude -p "Just output OK"
+  ralph --resume 3 -- claude -p @{PROMPT_FILE}
+  ralph --worktree 5 -- claude -p @{PROMPT_FILE}
+  ralph --goal "Build a REST API" --stack "Node.js, Express" 5 -- claude -p @{PROMPT_FILE}
+  ralph --timeout 120 5 -- claude -p @{PROMPT_FILE}
+  ralph --action-inbox 5 -- claude -p @{PROMPT_FILE}
+  ralph --action-inbox --inbox-timeout 120 5 -- claude -p @{PROMPT_FILE}
+  ralph --spec myfeature 5 -- claude -p @{SPEC_FILE}
+  ralph --monitor        # in a second terminal while a run is active
+
+Note:
+  By default the loop stops when the agent output contains a line matching:
+    COMPLETE: true
+  Customise via --stop-regex or the STOP_REGEX environment variable.
 `
 
 // Execute is the entrypoint called from main.
@@ -34,8 +73,7 @@ func Execute() {
 	cfg := config.New()
 	fs := flag.NewFlagSet("ralph", flag.ContinueOnError)
 	fs.Usage = func() {
-		fmt.Fprint(os.Stderr, usageHeader)
-		fs.PrintDefaults()
+		fmt.Fprint(os.Stderr, usageText)
 	}
 
 	// --version / -v
