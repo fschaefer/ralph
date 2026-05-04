@@ -123,7 +123,7 @@ EOF
 2. Run ralph with `--extend-spec`:
 
 ```bash
-ralph --extend-spec add-search 5 -- claude -p @.ralph/PROMPT.md
+ralph --extend-spec add-search 5 -- claude -p @{PROMPT_FILE}
 ```
 
 ralph will:
