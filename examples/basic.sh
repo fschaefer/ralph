@@ -7,9 +7,8 @@
 # Replace "claude -p @.ralph/PROMPT.md" with your actual agent command.
 
 set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-"$SCRIPT_DIR/../ralph.sh" \
+ralph \
   --max-iterations 5 \
   --delay 2 \
   -- claude -p @.ralph/PROMPT.md

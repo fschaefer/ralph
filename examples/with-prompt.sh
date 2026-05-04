@@ -8,9 +8,8 @@
 # Adjust --goal, --stack, --max-iterations, and the agent command to your needs.
 
 set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-"$SCRIPT_DIR/../ralph.sh" \
+ralph \
   --goal "Build a REST API with CRUD endpoints for a todo list (title, done, created_at)" \
   --stack "Node.js 20, Express 4, SQLite (better-sqlite3), no TypeScript" \
   --max-iterations 10 \

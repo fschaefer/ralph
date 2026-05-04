@@ -12,17 +12,16 @@
 # Use --inbox-timeout to auto-continue after N seconds if the user does not respond.
 
 set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Basic usage – wait indefinitely for user input
-"$SCRIPT_DIR/../ralph.sh" \
+ralph \
   --action-inbox \
   --goal "Build a CLI tool" \
   --stack "Bash" \
   10 -- claude -p @{PROMPT_FILE}
 
 # With a 90-second timeout – loop continues automatically if user doesn't respond
-# "$SCRIPT_DIR/../ralph.sh" \
+# ralph \
 #   --action-inbox \
 #   --inbox-timeout 90 \
 #   --goal "Build a CLI tool" \

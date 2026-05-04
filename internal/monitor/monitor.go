@@ -9,9 +9,9 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
-	"github.com/fschaefer/ralph/internal/ui"
 )
+
+const sep = "============================================================"
 
 const (
 	maxLines     = 50
@@ -42,7 +42,7 @@ func Run(ralphDir string) error {
 		select {
 		case <-sigCh:
 			fmt.Println()
-			fmt.Println(ui.Dim("Monitor stopped."))
+			fmt.Println("Monitor stopped.")
 			return nil
 		case <-ticker.C:
 			offset = appendNew(logPath, iterPath, offset)
@@ -52,12 +52,12 @@ func Run(ralphDir string) error {
 
 func printHeader(logPath, iterPath string) {
 	iter := readIter(iterPath)
-	fmt.Println(ui.Sep())
-	fmt.Printf("  %s\n\n", ui.Header("Ralph Monitor – Live Log"))
-	fmt.Printf("  %s  %s\n", ui.Gray(fmt.Sprintf("%-18s", "Log file:")), logPath)
-	fmt.Printf("  %s  %s\n", ui.Gray(fmt.Sprintf("%-18s", "Current iteration:")), iter)
-	fmt.Println(ui.Sep())
-	fmt.Println(ui.Dim("  (Press Ctrl+C to stop)"))
+	fmt.Println(sep)
+	fmt.Println("📡 Ralph Monitor – Live Log")
+	fmt.Printf("  %-18s %s\n", "Log file:", logPath)
+	fmt.Printf("  %-18s %s\n", "Current iteration:", iter)
+	fmt.Println(sep)
+	fmt.Println("(Press Ctrl+C to stop)")
 	fmt.Println()
 }
 
@@ -72,7 +72,7 @@ func printTail(path string, n int) int64 {
 		lines = lines[len(lines)-n:]
 	}
 	for _, l := range lines {
-		fmt.Println(ui.Dim(l))
+		fmt.Println(l)
 	}
 	return int64(len(data))
 }

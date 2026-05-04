@@ -8,9 +8,8 @@
 # Requirements: the current directory must be inside a Git repository.
 
 set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-"$SCRIPT_DIR/../ralph.sh" \
+ralph \
   --worktree \
   --goal "Refactor the authentication module to use JWT instead of sessions" \
   --stack "Python 3.11, FastAPI, python-jose, passlib" \

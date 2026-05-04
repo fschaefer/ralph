@@ -6,9 +6,8 @@
 # All agent output and the final run summary are still printed.
 
 set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-"$SCRIPT_DIR/../ralph.sh" \
+ralph \
   --quiet \
   --goal "Build a CLI tool that converts CSV to JSON" \
   --stack "Python 3, stdlib only" \

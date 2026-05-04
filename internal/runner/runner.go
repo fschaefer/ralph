@@ -15,8 +15,9 @@ import (
 
 	"github.com/fschaefer/ralph/internal/config"
 	"github.com/fschaefer/ralph/internal/prompt"
-	"github.com/fschaefer/ralph/internal/ui"
 )
+
+const sep = "============================================================"
 
 // ansiRE matches ANSI/VT100 escape sequences (colors, cursor movement, etc.).
 var ansiRE = regexp.MustCompile(`\x1b(?:[@-Z\\-_]|\[[0-9;?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\))`)
@@ -44,7 +45,7 @@ func Run(cfg *config.Config) int {
 		if saved, err := readIterationFile(cfg.IterationFile); err == nil {
 			if saved >= 1 && saved <= cfg.Iterations {
 				startIteration = saved
-				fmt.Printf("▶  Resume: starting at iteration %d\n", saved)
+				fmt.Printf("▶️  Resume: starting at iteration %d\n", saved)
 			}
 		}
 	}
@@ -62,7 +63,7 @@ func Run(cfg *config.Config) int {
 		select {
 		case <-sigCh:
 			fmt.Println()
-			printRunSummary(statuses, time.Since(startTS), "⚠  Interrupted (SIGINT)")
+			printRunSummary(statuses, time.Since(startTS), "⚠️  Interrupted (SIGINT)")
 			fmt.Fprintf(os.Stderr, "Last output in %s\n", cfg.LastOutputFile)
 			return 130
 		default:
@@ -81,7 +82,7 @@ func Run(cfg *config.Config) int {
 		// Git diff stat
 		if diffStat := gitDiffStat(); diffStat != "" {
 			fmt.Println()
-			fmt.Println(ui.Gray("📊 Changes since last commit (git diff --stat HEAD):"))
+			fmt.Println("📊 Changes since last commit (git diff --stat HEAD):")
 			fmt.Println(diffStat)
 		}
 
@@ -99,8 +100,8 @@ func Run(cfg *config.Config) int {
 		statuses = append(statuses, iterStatus{iter: i, code: exitCode, note: note})
 
 		if stopRE.MatchString(output) {
-			fmt.Println(ui.Green(fmt.Sprintf("✔ Stop condition matched in iteration %d", i)))
-			printRunSummary(statuses, time.Since(startTS), fmt.Sprintf("✔ Stop condition matched (iteration %d)", i))
+			fmt.Printf("✅ Stop condition matched in iteration %d\n", i)
+			printRunSummary(statuses, time.Since(startTS), fmt.Sprintf("✅ Stop condition matched (iteration %d)", i))
 			return 0
 		}
 
@@ -119,14 +120,14 @@ func Run(cfg *config.Config) int {
 	select {
 	case <-sigCh:
 		fmt.Println()
-		printRunSummary(statuses, time.Since(startTS), "⚠  Interrupted (SIGINT)")
+		printRunSummary(statuses, time.Since(startTS), "⚠️  Interrupted (SIGINT)")
 		fmt.Fprintf(os.Stderr, "Last output in %s\n", cfg.LastOutputFile)
 		return 130
 	default:
 	}
 
-	fmt.Println(ui.Yellow("⚠  Max iterations reached."))
-	printRunSummary(statuses, time.Since(startTS), fmt.Sprintf("⚠  Max iterations (%d) reached", cfg.Iterations))
+	fmt.Println("⚠️  Max iterations reached.")
+	printRunSummary(statuses, time.Since(startTS), fmt.Sprintf("⚠️  Max iterations (%d) reached", cfg.Iterations))
 	return 2
 }
 
@@ -261,10 +262,9 @@ func gitDiffStat() string {
 // ── Output helpers ────────────────────────────────────────────────────────────
 
 func printConfigHeader(cfg *config.Config) {
-	fmt.Println(ui.Sep())
-	fmt.Printf("  %s\n\n", ui.Header("Ralph"))
+	fmt.Println("--- Ralph Configuration ---")
 	row := func(k, v string) {
-		fmt.Printf("  %s %s\n", ui.Gray(fmt.Sprintf("%-18s", k)), v)
+		fmt.Printf("  %-18s %s\n", k, v)
 	}
 	row("Iterations:", strconv.Itoa(cfg.Iterations))
 	row("Delay:", fmt.Sprintf("%gs", cfg.Delay))
@@ -296,37 +296,36 @@ func printConfigHeader(cfg *config.Config) {
 	if src := prompt.PromptSource(cfg); src != "" {
 		row("Prompt file:", src)
 	}
-	fmt.Printf("  %s %s\n", ui.Gray(fmt.Sprintf("%-18s", "Command:")), strings.Join(cfg.AgentCmd, " "))
+	fmt.Printf("  Command:           ")
+	fmt.Println(strings.Join(cfg.AgentCmd, " "))
 	fmt.Println()
 }
 
 func printIterBanner(i, total int) {
-	fmt.Println(ui.Sep())
-	fmt.Printf("  %s\n", ui.Bold(fmt.Sprintf("Iteration %d / %d", i, total)))
-	fmt.Println(ui.Sep())
+	fmt.Println(sep)
+	fmt.Printf("Iteration %d/%d\n", i, total)
+	fmt.Println(sep)
 }
 
 func printRunSummary(statuses []iterStatus, elapsed time.Duration, outcome string) {
 	mins := int(elapsed.Minutes())
 	secs := int(elapsed.Seconds()) % 60
 	fmt.Println()
-	fmt.Println(ui.Sep())
-	fmt.Printf("  %s\n\n", ui.Header("Run Summary"))
-	fmt.Printf("  %s  %dm %02ds\n", ui.Gray(fmt.Sprintf("%-20s", "Total time:")), mins, secs)
+	fmt.Println(sep)
+	fmt.Println("📋 Run Summary")
+	fmt.Println(sep)
+	fmt.Printf("  %-20s %dm %02ds\n", "Total time:", mins, secs)
 	if len(statuses) > 0 {
 		fmt.Println()
-		fmt.Printf("  %s  %s  %s\n",
-			ui.Gray(fmt.Sprintf("%-6s", "Iter.")),
-			ui.Gray(fmt.Sprintf("%-6s", "Exit")),
-			ui.Gray("Status"))
+		fmt.Printf("  %-6s  %-6s  %s\n", "Iter.", "Exit", "Status")
 		fmt.Printf("  %-6s  %-6s  %s\n", "------", "------", "------")
 		for _, s := range statuses {
 			fmt.Printf("  %-6d  %-6d  %s\n", s.iter, s.code, s.note)
 		}
 	}
 	fmt.Println()
-	fmt.Printf("  %s  %s\n", ui.Gray(fmt.Sprintf("%-20s", "Outcome:")), outcome)
-	fmt.Println(ui.Sep())
+	fmt.Printf("  %-20s %s\n", "Outcome:", outcome)
+	fmt.Println(sep)
 }
 
 func yesNo(b bool) string {

@@ -25,9 +25,13 @@ func handleActionInbox(cfg *config.Config, output string) error {
 	fmt.Println()
 	fmt.Println("📬 Action Inbox – agent is waiting for input:")
 	fmt.Printf("   %s\n\n", msg)
-	fmt.Print("Your reply: ")
-
 	var reply string
+	if cfg.InboxTimeout > 0 {
+		fmt.Printf("Your reply (%ds timeout): ", cfg.InboxTimeout)
+	} else {
+		fmt.Print("Your reply: ")
+	}
+
 	if cfg.InboxTimeout > 0 {
 		done := make(chan string, 1)
 		go func() {

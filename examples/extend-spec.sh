@@ -17,9 +17,8 @@
 # Then run:
 
 set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-"$SCRIPT_DIR/../ralph.sh" \
+ralph \
   --extend-spec add-search \
   --max-iterations 10 \
   --delay 3 \

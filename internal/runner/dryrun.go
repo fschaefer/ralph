@@ -6,14 +6,13 @@ import (
 
 	"github.com/fschaefer/ralph/internal/config"
 	"github.com/fschaefer/ralph/internal/prompt"
-	"github.com/fschaefer/ralph/internal/ui"
 )
 
 // DryRun prints the effective configuration and exits without running the agent.
 func DryRun(cfg *config.Config) {
-	fmt.Println(ui.Header("🔍 Dry-run – configuration (no command will be executed):"))
+	fmt.Println("🔍 Dry-run – configuration (no command will be executed):")
 	row := func(k, v string) {
-		fmt.Printf("  %s %s\n", ui.Gray(fmt.Sprintf("%-14s", k)), v)
+		fmt.Printf("  %-14s %s\n", k, v)
 	}
 	row("Iterations:", fmt.Sprintf("%d", cfg.Iterations))
 	row("Delay:", fmt.Sprintf("%gs", cfg.Delay))
@@ -40,5 +39,5 @@ func DryRun(cfg *config.Config) {
 	if src := prompt.PromptSource(cfg); src != "" {
 		row("Prompt file:", src)
 	}
-	fmt.Printf("  %s %s\n", ui.Gray(fmt.Sprintf("%-14s", "Command:")), strings.Join(cfg.AgentCmd, " "))
+	fmt.Printf("  %-14s %s\n", "Command:", strings.Join(cfg.AgentCmd, " "))
 }
