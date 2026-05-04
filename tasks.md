@@ -6,3 +6,5 @@
 - [x] Make default no-argument behavior consistent: no help text by default, only short error on stderr
 - [x] Change `./ralph.sh` no-argument behavior to print help/usage output
 - [x] Change `./ralph` (Go binary) no-argument behavior to print help/usage output (stdout, exit 0)
+- [x] Replace `embeddedTemplate` in `internal/prompt/prompt.go` with the NEW_PROMPT.md content and add runtime substitution of `{{DIRECTORY_STRUCTURE}}`, `{{GIT_STATUS}}`, `{{GIT_LOG}}` placeholders
+- [x] Replace `EMBEDDED_PROMPT_TEMPLATE` in `ralph.sh` with the NEW_PROMPT.md content and add substitution of `{{DIRECTORY_STRUCTURE}}`, `{{GIT_STATUS}}`, `{{GIT_LOG}}` placeholders
