@@ -8,13 +8,16 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/fschaefer/ralph/internal/config"
+	"github.com/fschaefer/ralph/internal/monitor"
+	"github.com/fschaefer/ralph/internal/prompt"
+	"github.com/fschaefer/ralph/internal/runner"
 )
 
 // run is the cobra RunE handler – wires CLI flags → Config and invokes the runner.
 func run(cmd *cobra.Command, args []string) error {
 	cfg := config.New()
 
-	// Override delay from RALPH_DELAY env if flag not explicitly set
+	// RALPH_DELAY env sets default; explicit --delay flag overrides it below
 	if d, ok := os.LookupEnv("RALPH_DELAY"); ok {
 		if v, err := strconv.ParseFloat(d, 64); err == nil {
 			cfg.Delay = v
@@ -26,8 +29,10 @@ func run(cmd *cobra.Command, args []string) error {
 	if cfg.Iterations, err = cmd.Flags().GetInt("max-iterations"); err != nil {
 		return err
 	}
-	if cfg.Delay, err = cmd.Flags().GetFloat64("delay"); err != nil {
-		return err
+	if cmd.Flags().Changed("delay") {
+		if cfg.Delay, err = cmd.Flags().GetFloat64("delay"); err != nil {
+			return err
+		}
 	}
 	if cfg.Timeout, err = cmd.Flags().GetInt("timeout"); err != nil {
 		return err
@@ -80,9 +85,12 @@ func run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// --monitor needs no agent command; start TUI and return
+	if cfg.Monitor {
+		return monitor.Run(cfg.RalphDir)
+	}
+
 	// Parse positional iterations argument (first non-flag arg before --)
-	// cobra puts args after -- into args; but we handle the positional iterations arg ourselves.
-	// The first positional arg (if numeric) is treated as iterations.
 	remaining := args
 	if len(remaining) > 0 {
 		if n, e := strconv.Atoi(remaining[0]); e == nil {
@@ -91,26 +99,45 @@ func run(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Require agent command for non-monitor, non-dry-run modes
+	if len(remaining) == 0 && !cfg.DryRun {
+		return fmt.Errorf("agent command is missing – use '--' to separate ralph flags from the agent command")
+	}
+	cfg.AgentCmd = remaining
+
 	// Set up derived paths
 	cfg.LogFile = cfg.RalphDir + "/ralph.log"
 	cfg.LastOutputFile = cfg.RalphDir + "/last-output.txt"
 	cfg.IterationFile = cfg.RalphDir + "/iteration.txt"
 	cfg.InboxResponseFile = cfg.RalphDir + "/inbox-response.txt"
 
-	// --monitor needs no agent command
-	if cfg.Monitor {
-		fmt.Fprintln(os.Stderr, "monitor mode not yet implemented")
+	// Resolve prompt file and substitute {PROMPT_FILE}/{SPEC_FILE} in agent args
+	if err := prompt.Resolve(cfg); err != nil {
+		return err
+	}
+
+	// --dry-run: print config and exit
+	if cfg.DryRun {
+		runner.DryRun(cfg)
 		return nil
 	}
 
-	// Require -- separator / agent command
-	if len(remaining) == 0 {
-		return fmt.Errorf("agent command is missing – use '--' to separate ralph flags from the agent command")
+	// --extend-spec: inject new task before starting the loop
+	if cfg.ExtendSpecName != "" {
+		if err := runner.ExtendSpec(cfg); err != nil {
+			return err
+		}
 	}
-	cfg.AgentCmd = remaining
 
-	fmt.Printf("ralph v%s – configuration loaded (full implementation coming in next tasks)\n", version)
-	fmt.Printf("  iterations: %d  delay: %gs  stop: %q\n", cfg.Iterations, cfg.Delay, cfg.StopRegex)
-	fmt.Printf("  agent: %v\n", cfg.AgentCmd)
+	// --worktree: set up isolated git worktree
+	if cfg.Worktree {
+		if err := runner.SetupWorktree(cfg); err != nil {
+			return err
+		}
+	}
+
+	// Run the main loop; exit with the returned code
+	exitCode := runner.Run(cfg)
+	os.Exit(exitCode)
 	return nil
 }

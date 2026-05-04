@@ -28,13 +28,14 @@ type Config struct {
 	AgentCmd []string
 
 	// Derived at runtime
-	RalphDir          string
-	LogFile           string
-	LastOutputFile    string
-	IterationFile     string
-	InboxResponseFile string
+	RalphDir            string
+	LogFile             string
+	LastOutputFile      string
+	IterationFile       string
+	InboxResponseFile   string
 	EffectivePromptFile string
-	SpecFilePath      string
+	SpecFilePath        string
+	WorktreePath        string
 }
 
 // New returns a Config with sensible defaults.
