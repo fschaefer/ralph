@@ -18,6 +18,9 @@ import (
 	"github.com/fschaefer/ralph/internal/ui"
 )
 
+// ansiRE matches ANSI/VT100 escape sequences (colors, cursor movement, etc.).
+var ansiRE = regexp.MustCompile(`\x1b(?:[@-Z\\-_]|\[[0-9;?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\))`)
+
 // iterStatus records the outcome of a single iteration.
 type iterStatus struct {
 	iter int
@@ -188,9 +191,9 @@ func runIteration(cfg *config.Config, iteration int, logger *fileLogger, _ *rege
 
 	output := buf.String()
 
-	// Append to ralph.log
+	// Append to ralph.log (plain text — strip ANSI codes and CR overwrite sequences)
 	logger.info(fmt.Sprintf("Iteration %d exit=%d", iteration, exitCode))
-	logger.write(output)
+	logger.write(stripTerminalCodes(output))
 
 	return exitCode, output
 }
@@ -331,5 +334,28 @@ func yesNo(b bool) string {
 		return "yes"
 	}
 	return "no"
+}
+
+// stripTerminalCodes removes ANSI/VT100 escape sequences and collapses
+// carriage-return overwrite sequences (e.g. progress bars) so that log files
+// contain human-readable plain text.
+func stripTerminalCodes(s string) string {
+	// Remove all ANSI escape sequences
+	s = ansiRE.ReplaceAllString(s, "")
+	// Collapse "text\r<spaces/text>" overwrite sequences: keep only the last
+	// segment after the final \r on each line.
+	var out strings.Builder
+	for _, line := range strings.Split(s, "\n") {
+		if idx := strings.LastIndex(line, "\r"); idx >= 0 {
+			line = line[idx+1:]
+		}
+		// Skip lines that are entirely whitespace (leftover from erased progress bars)
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		out.WriteString(line)
+		out.WriteByte('\n')
+	}
+	return out.String()
 }
 
