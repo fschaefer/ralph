@@ -1,2 +1,3 @@
 # Runtime directory for ralph.sh (logs, state, generated prompts)
 .ralph/
+/ralph
