@@ -20,7 +20,7 @@ go install .
 
 ### Dependencies
 
-Go modules are used; all dependencies (cobra, charmbracelet/lipgloss, charmbracelet/log, charmbracelet/huh, charmbracelet/bubbletea) are declared in `go.mod` and fetched automatically by `go build`/`go install`.
+Go modules are used; all dependencies (cobra) are declared in `go.mod` and fetched automatically by `go build`/`go install`.
 
 Optionally requires `git` for `--resume`, `--worktree`, and run summaries.
 

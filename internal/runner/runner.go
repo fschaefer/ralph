@@ -13,10 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/log"
 	"github.com/fschaefer/ralph/internal/config"
 	"github.com/fschaefer/ralph/internal/prompt"
+	"github.com/fschaefer/ralph/internal/ui"
 )
 
 // iterStatus records the outcome of a single iteration.
@@ -29,6 +28,7 @@ type iterStatus struct {
 // Run executes the main ralph loop. It returns the exit code the process should use.
 func Run(cfg *config.Config) int {
 	logger := newLogger(cfg.LogFile)
+	defer logger.close()
 
 	stopRE, err := regexp.Compile("(?im)" + cfg.StopRegex)
 	if err != nil {
@@ -41,7 +41,7 @@ func Run(cfg *config.Config) int {
 		if saved, err := readIterationFile(cfg.IterationFile); err == nil {
 			if saved >= 1 && saved <= cfg.Iterations {
 				startIteration = saved
-				printInfo(fmt.Sprintf("▶️  Resume: starting at iteration %d", saved))
+				fmt.Printf("▶  Resume: starting at iteration %d\n", saved)
 			}
 		}
 	}
@@ -59,14 +59,14 @@ func Run(cfg *config.Config) int {
 		select {
 		case <-sigCh:
 			fmt.Println()
-			printRunSummary(statuses, time.Since(startTS), "⚠️  Interrupted (SIGINT)")
+			printRunSummary(statuses, time.Since(startTS), "⚠  Interrupted (SIGINT)")
 			fmt.Fprintf(os.Stderr, "Last output in %s\n", cfg.LastOutputFile)
 			return 130
 		default:
 		}
 
 		if err := writeIterationFile(cfg.IterationFile, i); err != nil {
-			logger.Warn("could not write iteration file", "err", err)
+			logger.warn("could not write iteration file: " + err.Error())
 		}
 
 		if !cfg.Quiet {
@@ -78,7 +78,7 @@ func Run(cfg *config.Config) int {
 		// Git diff stat
 		if diffStat := gitDiffStat(); diffStat != "" {
 			fmt.Println()
-			fmt.Println(diffStatStyle.Render("📊 Changes since last commit (git diff --stat HEAD):"))
+			fmt.Println(ui.Gray("📊 Changes since last commit (git diff --stat HEAD):"))
 			fmt.Println(diffStat)
 		}
 
@@ -96,15 +96,15 @@ func Run(cfg *config.Config) int {
 		statuses = append(statuses, iterStatus{iter: i, code: exitCode, note: note})
 
 		if stopRE.MatchString(output) {
-			fmt.Println(successStyle.Render(fmt.Sprintf("✅ Stop condition matched in iteration %d", i)))
-			printRunSummary(statuses, time.Since(startTS), fmt.Sprintf("✅ Stop condition matched (iteration %d)", i))
+			fmt.Println(ui.Green(fmt.Sprintf("✔ Stop condition matched in iteration %d", i)))
+			printRunSummary(statuses, time.Since(startTS), fmt.Sprintf("✔ Stop condition matched (iteration %d)", i))
 			return 0
 		}
 
 		// Action inbox
 		if cfg.ActionInbox {
 			if err := handleActionInbox(cfg, output); err != nil {
-				logger.Warn("action inbox error", "err", err)
+				logger.warn("action inbox error: " + err.Error())
 			}
 		}
 
@@ -116,19 +116,19 @@ func Run(cfg *config.Config) int {
 	select {
 	case <-sigCh:
 		fmt.Println()
-		printRunSummary(statuses, time.Since(startTS), "⚠️  Interrupted (SIGINT)")
+		printRunSummary(statuses, time.Since(startTS), "⚠  Interrupted (SIGINT)")
 		fmt.Fprintf(os.Stderr, "Last output in %s\n", cfg.LastOutputFile)
 		return 130
 	default:
 	}
 
-	fmt.Println(warnStyle.Render("⚠️  Max iterations reached."))
-	printRunSummary(statuses, time.Since(startTS), fmt.Sprintf("⚠️  Max iterations (%d) reached", cfg.Iterations))
+	fmt.Println(ui.Yellow("⚠  Max iterations reached."))
+	printRunSummary(statuses, time.Since(startTS), fmt.Sprintf("⚠  Max iterations (%d) reached", cfg.Iterations))
 	return 2
 }
 
 // runIteration executes the agent command once and returns (exitCode, captured output).
-func runIteration(cfg *config.Config, iteration int, logger *log.Logger, _ *regexp.Regexp) (int, string) {
+func runIteration(cfg *config.Config, iteration int, logger *fileLogger, _ *regexp.Regexp) (int, string) {
 	var cmd *exec.Cmd
 	if cfg.Timeout > 0 {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.Timeout)*time.Second)
@@ -189,26 +189,50 @@ func runIteration(cfg *config.Config, iteration int, logger *log.Logger, _ *rege
 	output := buf.String()
 
 	// Append to ralph.log
-	logger.Info(fmt.Sprintf("Iteration %d exit=%d", iteration, exitCode))
-	if _, err := os.OpenFile(cfg.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); err == nil {
-		// logger already writes to log file; append raw output separately
-		if f, err := os.OpenFile(cfg.LogFile, os.O_APPEND|os.O_WRONLY, 0o644); err == nil {
-			fmt.Fprintln(f, output)
-			f.Close()
-		}
-	}
+	logger.info(fmt.Sprintf("Iteration %d exit=%d", iteration, exitCode))
+	logger.write(output)
 
 	return exitCode, output
 }
 
-// newLogger creates a charmbracelet/log logger writing to the given log file.
-func newLogger(logFile string) *log.Logger {
-	if err := os.MkdirAll(strings.TrimSuffix(logFile, "/ralph.log"), 0o755); err == nil {
+// ── Simple file logger ────────────────────────────────────────────────────────
+
+type fileLogger struct {
+	f *os.File
+}
+
+func newLogger(logFile string) *fileLogger {
+	dir := strings.TrimSuffix(logFile, "/ralph.log")
+	if err := os.MkdirAll(dir, 0o755); err == nil {
 		if f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); err == nil {
-			return log.New(f)
+			return &fileLogger{f: f}
 		}
 	}
-	return log.New(io.Discard)
+	return &fileLogger{}
+}
+
+func (l *fileLogger) info(msg string) {
+	if l.f != nil {
+		fmt.Fprintf(l.f, "%s INFO %s\n", time.Now().Format("2006/01/02 15:04:05"), msg)
+	}
+}
+
+func (l *fileLogger) warn(msg string) {
+	if l.f != nil {
+		fmt.Fprintf(l.f, "%s WARN %s\n", time.Now().Format("2006/01/02 15:04:05"), msg)
+	}
+}
+
+func (l *fileLogger) write(s string) {
+	if l.f != nil {
+		fmt.Fprint(l.f, s)
+	}
+}
+
+func (l *fileLogger) close() {
+	if l.f != nil {
+		l.f.Close()
+	}
 }
 
 func readIterationFile(path string) (int, error) {
@@ -231,26 +255,13 @@ func gitDiffStat() string {
 	return strings.TrimSpace(string(out))
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
-
-var (
-	headerStyle   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("63"))
-	bannerStyle   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39"))
-	successStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("82"))
-	warnStyle     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("214"))
-	diffStatStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
-	tableKeyStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
-	tableValStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("255"))
-)
-
-func printInfo(msg string) {
-	fmt.Println(msg)
-}
+// ── Output helpers ────────────────────────────────────────────────────────────
 
 func printConfigHeader(cfg *config.Config) {
-	fmt.Println(headerStyle.Render("--- Ralph Configuration ---"))
+	fmt.Println(ui.Sep())
+	fmt.Printf("  %s\n\n", ui.Header("Ralph"))
 	row := func(k, v string) {
-		fmt.Printf("  %s %s\n", tableKeyStyle.Render(fmt.Sprintf("%-18s", k)), tableValStyle.Render(v))
+		fmt.Printf("  %s  %s\n", ui.Gray(fmt.Sprintf("%-18s", k)), v)
 	}
 	row("Iterations:", strconv.Itoa(cfg.Iterations))
 	row("Delay:", fmt.Sprintf("%gs", cfg.Delay))
@@ -282,40 +293,37 @@ func printConfigHeader(cfg *config.Config) {
 	if src := prompt.PromptSource(cfg); src != "" {
 		row("Prompt file:", src)
 	}
-	fmt.Printf("  %s %s\n", tableKeyStyle.Render("Command:          "), tableValStyle.Render(strings.Join(cfg.AgentCmd, " ")))
+	fmt.Printf("  %s  %s\n", ui.Gray(fmt.Sprintf("%-18s", "Command:")), strings.Join(cfg.AgentCmd, " "))
 	fmt.Println()
 }
 
 func printIterBanner(i, total int) {
-	sep := strings.Repeat("=", 60)
-	fmt.Println(bannerStyle.Render(sep))
-	fmt.Println(bannerStyle.Render(fmt.Sprintf("Iteration %d/%d", i, total)))
-	fmt.Println(bannerStyle.Render(sep))
+	fmt.Println(ui.Sep())
+	fmt.Printf("  %s\n", ui.Bold(fmt.Sprintf("Iteration %d / %d", i, total)))
+	fmt.Println(ui.Sep())
 }
 
 func printRunSummary(statuses []iterStatus, elapsed time.Duration, outcome string) {
 	mins := int(elapsed.Minutes())
 	secs := int(elapsed.Seconds()) % 60
-	sep := strings.Repeat("=", 60)
 	fmt.Println()
-	fmt.Println(headerStyle.Render(sep))
-	fmt.Println(headerStyle.Render("📋 Run Summary"))
-	fmt.Println(headerStyle.Render(sep))
-	fmt.Printf("  %-20s %dm %02ds\n", tableKeyStyle.Render("Total time:"), mins, secs)
+	fmt.Println(ui.Sep())
+	fmt.Printf("  %s\n\n", ui.Header("Run Summary"))
+	fmt.Printf("  %s  %dm %02ds\n", ui.Gray(fmt.Sprintf("%-20s", "Total time:")), mins, secs)
 	if len(statuses) > 0 {
 		fmt.Println()
-		fmt.Printf("  %-6s  %-6s  %s\n",
-			tableKeyStyle.Render("Iter."),
-			tableKeyStyle.Render("Exit"),
-			tableKeyStyle.Render("Status"))
+		fmt.Printf("  %s  %s  %s\n",
+			ui.Gray(fmt.Sprintf("%-6s", "Iter.")),
+			ui.Gray(fmt.Sprintf("%-6s", "Exit")),
+			ui.Gray("Status"))
 		fmt.Printf("  %-6s  %-6s  %s\n", "------", "------", "------")
 		for _, s := range statuses {
 			fmt.Printf("  %-6d  %-6d  %s\n", s.iter, s.code, s.note)
 		}
 	}
 	fmt.Println()
-	fmt.Printf("  %-20s %s\n", tableKeyStyle.Render("Outcome:"), outcome)
-	fmt.Println(headerStyle.Render(sep))
+	fmt.Printf("  %s  %s\n", ui.Gray(fmt.Sprintf("%-20s", "Outcome:")), outcome)
+	fmt.Println(ui.Sep())
 }
 
 func yesNo(b bool) string {
@@ -324,3 +332,4 @@ func yesNo(b bool) string {
 	}
 	return "no"
 }
+
