@@ -1,4 +1,4 @@
-# Runtime directory for ralph.sh (logs, state, generated prompts)
+# Runtime directory for ralph (logs, state, generated prompts)
 .ralph/
 /ralph
 .cache/

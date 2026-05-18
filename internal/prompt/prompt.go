@@ -69,8 +69,8 @@ If any gaps are discovered, you must append them to ` + "`" + `tasks.md` + "`" +
 {{GIT_LOG}}
 </current_context>`
 
-// Resolve sets cfg.EffectivePromptFile and cfg.SpecFilePath, generates .ralph/PROMPT.md
-// if --goal/--stack are provided, and substitutes {PROMPT_FILE}/{SPEC_FILE} placeholders
+// Resolve sets cfg.EffectivePromptFile, generates .ralph/PROMPT.md
+// if --goal/--stack are provided, and substitutes {PROMPT_FILE} placeholders
 // in cfg.AgentCmd. Returns an error if a referenced file cannot be found.
 func Resolve(cfg *config.Config) error {
 	if err := os.MkdirAll(cfg.RalphDir, 0o755); err != nil {
@@ -84,13 +84,6 @@ func Resolve(cfg *config.Config) error {
 		}
 		cfg.EffectivePromptFile = cfg.PromptFileOverride
 
-	case cfg.SpecName != "":
-		cfg.SpecFilePath = filepath.Join(cfg.RalphDir, "specs", cfg.SpecName+".md")
-		if _, err := os.Stat(cfg.SpecFilePath); err != nil {
-			return fmt.Errorf("spec file not found: %s", cfg.SpecFilePath)
-		}
-		cfg.EffectivePromptFile = cfg.SpecFilePath
-
 	case cfg.Goal != "" || cfg.Stack != "":
 		generated, err := generatePromptFile(cfg)
 		if err != nil {
@@ -99,11 +92,10 @@ func Resolve(cfg *config.Config) error {
 		cfg.EffectivePromptFile = generated
 	}
 
-	// Substitute {PROMPT_FILE} and {SPEC_FILE} placeholders in agent args
+	// Substitute {PROMPT_FILE} placeholders in agent args.
 	if cfg.EffectivePromptFile != "" {
 		for i, arg := range cfg.AgentCmd {
 			arg = strings.ReplaceAll(arg, "{PROMPT_FILE}", cfg.EffectivePromptFile)
-			arg = strings.ReplaceAll(arg, "{SPEC_FILE}", cfg.EffectivePromptFile)
 			cfg.AgentCmd[i] = arg
 		}
 	}
@@ -146,8 +138,6 @@ func PromptSource(cfg *config.Config) string {
 	switch {
 	case cfg.PromptFileOverride != "":
 		return cfg.EffectivePromptFile + " (--prompt-file)"
-	case cfg.SpecName != "":
-		return cfg.EffectivePromptFile + " (--spec " + cfg.SpecName + ")"
 	case cfg.Goal != "" || cfg.Stack != "":
 		if _, err := os.Stat("PROMPT_TEMPLATE.md"); err == nil {
 			return cfg.EffectivePromptFile + " (from PROMPT_TEMPLATE.md)"

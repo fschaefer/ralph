@@ -61,7 +61,6 @@ func SetupWorktree(cfg *config.Config) error {
 	cfg.LogFile = filepath.Join(wtRalphDir, "ralph.log")
 	cfg.LastOutputFile = filepath.Join(wtRalphDir, "last-output.txt")
 	cfg.IterationFile = filepath.Join(wtRalphDir, "iteration.txt")
-	cfg.InboxResponseFile = filepath.Join(wtRalphDir, "inbox-response.txt")
 	cfg.RalphDir = wtRalphDir
 
 	// Change working directory into worktree

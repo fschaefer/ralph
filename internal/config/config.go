@@ -10,19 +10,12 @@ type Config struct {
 	Resume     bool
 	Quiet      bool
 	DryRun     bool
-	Monitor    bool
 	Worktree   bool
 
-	// Prompt / spec
+	// Prompt
 	Goal               string
 	Stack              string
 	PromptFileOverride string
-	SpecName           string
-	ExtendSpecName     string
-
-	// Action inbox
-	ActionInbox  bool
-	InboxTimeout int
 
 	// Agent command (after --)
 	AgentCmd []string
@@ -32,9 +25,7 @@ type Config struct {
 	LogFile             string
 	LastOutputFile      string
 	IterationFile       string
-	InboxResponseFile   string
 	EffectivePromptFile string
-	SpecFilePath        string
 	WorktreePath        string
 }
 

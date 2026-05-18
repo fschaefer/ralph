@@ -8,8 +8,8 @@
 set -euo pipefail
 
 ralph \
+  10 \
   --quiet \
   --goal "Build a CLI tool that converts CSV to JSON" \
   --stack "Python 3, stdlib only" \
-  --max-iterations 10 \
   -- claude -p @{PROMPT_FILE}

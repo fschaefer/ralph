@@ -24,18 +24,6 @@ func DryRun(cfg *config.Config) {
 	row("Stop regex:", cfg.StopRegex)
 	row("Resume:", yesNo(cfg.Resume))
 	row("Worktree:", yesNo(cfg.Worktree))
-	if cfg.ActionInbox {
-		if cfg.InboxTimeout > 0 {
-			row("Action inbox:", fmt.Sprintf("yes (timeout: %ds)", cfg.InboxTimeout))
-		} else {
-			row("Action inbox:", "yes (timeout: unlimited)")
-		}
-	} else {
-		row("Action inbox:", "no")
-	}
-	if cfg.ExtendSpecName != "" {
-		row("Extend spec:", ".ralph/specs/"+cfg.ExtendSpecName+".md")
-	}
 	if src := prompt.PromptSource(cfg); src != "" {
 		row("Prompt file:", src)
 	}

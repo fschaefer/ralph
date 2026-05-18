@@ -10,9 +10,9 @@
 set -euo pipefail
 
 ralph \
+  15 \
   --worktree \
   --goal "Refactor the authentication module to use JWT instead of sessions" \
   --stack "Python 3.11, FastAPI, python-jose, passlib" \
-  --max-iterations 15 \
   --delay 5 \
   -- claude -p @{PROMPT_FILE}

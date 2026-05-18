@@ -1,329 +1,104 @@
-# ralph 🤖
+# ralph
 
-A minimal loop runner for autonomous AI coding agents, written in Go. Give it an agent command and it will keep calling it until the agent signals completion or the iteration limit is reached.
+`ralph` is a small loop runner for AI coding agents.
 
-Inspired by [wiggum-cli](https://github.com/federiconeri/wiggum-cli).
+It repeatedly executes an agent command until either:
 
----
+- the agent outputs the configured completion signal, or
+- the maximum number of iterations is reached.
 
-## Installation
+## Quickstart
 
-### From source (requires Go ≥ 1.21)
-
-```bash
-git clone https://github.com/fschaefer/ralph
-cd ralph
-go build -o ralph .
-# optionally install into $GOPATH/bin:
-go install .
-```
-
-### Dependencies
-
-No external dependencies – ralph uses only the Go standard library.
-
-Optionally requires `git` for `--resume`, `--worktree`, and run summaries.
-
----
-
-## Usage
-
-```
-ralph [options] [iterations] -- <agent-command...>
-```
-
-The `--` separator is **required** to distinguish ralph flags from the agent command.
-
-### Quickstart
+Run a plain loop with an explicit prompt:
 
 ```bash
-# Run an agent up to 5 times, stop when it prints "COMPLETE: true"
-ralph 5 -- claude -p @{PROMPT_FILE}
-
-# Same, using --max-iterations
-ralph --max-iterations 5 -- claude -p @{PROMPT_FILE}
+ralph 5 -- claude -p "Fix the failing tests and print COMPLETE: true when done"
 ```
 
----
+By default, `ralph` stops when the agent prints:
 
-## Options
-
-| Flag | Default | Description |
-|---|---|---|
-| `--max-iterations <n>` | `5` | Maximum number of loop iterations |
-| `--delay <s>` | `2` (or `$RALPH_DELAY`) | Pause between iterations in seconds |
-| `--timeout <s>` | `0` (off) | Per-iteration timeout; kills agent after `<s>` seconds |
-| `--stop-regex <pattern>` | `^COMPLETE:\s*true$` (or `$STOP_REGEX`) | Regex that triggers a successful stop |
-| `--dry-run` | off | Print configuration and exit without running |
-| `--resume` | off | Resume from last saved iteration (`.ralph/iteration.txt`) |
-| `--worktree` | off | Run the agent inside an isolated Git worktree |
-| `--action-inbox` | off | Pause when agent outputs `ACTION_REQUIRED: <msg>`; wait for user input |
-| `--inbox-timeout <s>` | `0` (unlimited) | Timeout for user input prompt (requires `--action-inbox`) |
-| `--monitor` | off | Tail `.ralph/ralph.log` in real-time (open in a second terminal) |
-| `--quiet`, `-q` | off | Suppress config header and iteration banners |
-| `--goal <text>` | – | Project goal – fills `{{GOAL}}` in `PROMPT_TEMPLATE.md` |
-| `--stack <text>` | – | Tech stack – fills `{{STACK}}` in `PROMPT_TEMPLATE.md` |
-| `--prompt-file <path>` | – | Use a ready-made prompt file (overrides `--goal`/`--stack`) |
-| `--spec <name>` | – | Load `.ralph/specs/<name>.md` as prompt; use `{SPEC_FILE}` in the agent command |
-| `--extend-spec <name>` | – | Resume a completed project: appends a new task to `tasks.md` referencing `.ralph/specs/<name>.md` |
-| `-h`, `--help` | – | Show help and exit |
-
----
-
-## PROMPT Integration
-
-ralph can auto-generate a structured agent prompt by substituting two placeholders:
-
-| Placeholder | Flag |
-|---|---|
-| `{{GOAL}}` | `--goal "..."` |
-| `{{STACK}}` | `--stack "..."` |
-
-The filled template is saved to `.ralph/PROMPT.md`. Use `{PROMPT_FILE}` anywhere in your agent command to refer to it — ralph automatically replaces `{PROMPT_FILE}` with the actual path (`.ralph/PROMPT.md`) before each agent invocation:
-
-```bash
-ralph \
-  --goal "Build a REST API with CRUD endpoints for users" \
-  --stack "Node.js, Express, SQLite" \
-  10 -- claude -p @{PROMPT_FILE}
-```
-
-**No external file required.** ralph has a complete autonomous-agent prompt template built in. It is used automatically when `--goal` or `--stack` is provided and no `PROMPT_TEMPLATE.md` is found in the working directory.
-
-To customise the template, place a `PROMPT_TEMPLATE.md` in your project root — it takes priority over the built-in one.
-
-You can also provide a hand-crafted prompt file directly:
-
-```bash
-ralph --prompt-file my-prompt.md 10 -- claude -p @{PROMPT_FILE}
-```
-
-### Minimal prompt for the agent
-
-The agent only needs to output `COMPLETE: true` on its own line when all tasks are done. Everything else – task tracking, progress log, git commits – is managed by the agent itself via `tasks.md` and `progress.txt` (as defined in the built-in template).
-
----
-
-## Extending a Completed Project
-
-Once a project outputs `COMPLETE: true`, you can reopen it for new requirements using `--extend-spec`.
-
-1. Create a spec file describing the new requirements:
-
-```bash
-mkdir -p .ralph/specs
-cat > .ralph/specs/add-search.md <<'EOF'
-Add a full-text search endpoint to the existing REST API:
-- GET /users/search?q=<query> – returns matching users
-- Case-insensitive substring match on name and email
-- Returns the same user object shape as GET /users/:id
-EOF
-```
-
-2. Run ralph with `--extend-spec`:
-
-```bash
-ralph --extend-spec add-search 5 -- claude -p @{PROMPT_FILE}
-```
-
-ralph will:
-- Append a new `- [ ]` task to `tasks.md` pointing to the spec file
-- Append an entry to `progress.txt` recording the extension
-- Run the loop normally — the agent reads the new task, reads the spec, and implements it
-
-The agent will output `COMPLETE: true` again once the new tasks are done.
-
----
-
-## Multiple Specs
-
-Store reusable task-specific prompts in `.ralph/specs/` and load them with `--spec <name>`:
-
-```bash
-# Create specs directory and a spec
-mkdir -p .ralph/specs
-cp my-feature-prompt.md .ralph/specs/auth.md
-
-# Run with the spec
-ralph --spec auth 10 -- claude -p @{SPEC_FILE}
-```
-
-- `--spec auth` loads `.ralph/specs/auth.md`
-- Use `{SPEC_FILE}` anywhere in your agent command as a placeholder for the spec file path
-- The spec file is used as-is (no template substitution); for template substitution use `--goal`/`--stack` instead
-
----
-
-## Worktree Isolation
-
-`--worktree` creates a dedicated Git worktree for each run, so the agent never touches your working tree:
-
-```bash
-ralph --worktree --goal "Refactor auth module" --stack "Python, FastAPI" \
-  10 -- claude -p @{PROMPT_FILE}
-```
-
-- Worktree path: `.ralph/worktrees/<timestamp>/`
-- Branch: `ralph/run-<timestamp>`
-- Logs and state are stored inside the worktree
-
----
-
-## Action Inbox
-
-Enable `--action-inbox` to let the agent pause the loop and ask you a question mid-run.
-
-When the agent outputs a line starting with `ACTION_REQUIRED:`, ralph stops the loop, shows the message, and waits for your typed response. The response is written to `.ralph/inbox-response.txt` so the agent can read it on the next iteration.
-
-```bash
-ralph --action-inbox 10 -- claude -p @{PROMPT_FILE}
-```
-
-**Agent side** – the agent emits the signal like this:
-
-```
-ACTION_REQUIRED: Which database should I use – SQLite or PostgreSQL?
-```
-
-**User side** – ralph pauses and prompts:
-
-```
-📬 Action Inbox – agent is waiting for input:
-   Which database should I use – SQLite or PostgreSQL?
-
-Your reply: SQLite please
-✅ Reply saved to .ralph/inbox-response.txt
-```
-
-On the next iteration the agent reads `.ralph/inbox-response.txt` and continues.
-
-### Optional timeout
-
-Use `--inbox-timeout <s>` to automatically continue if no input is received within the given number of seconds. If the timeout fires, an empty response is written and the loop continues.
-
-```bash
-ralph --action-inbox --inbox-timeout 60 10 -- claude -p @{PROMPT_FILE}
-```
-
----
-
-## Monitor Mode
-
-Watch a running ralph session live from a second terminal:
-
-```bash
-# Terminal 1 – start the run
-ralph --goal "Build a REST API" --stack "Node.js" 10 -- claude -p @{PROMPT_FILE}
-
-# Terminal 2 – tail the live log
-ralph --monitor
-```
-
-`--monitor` shows the last 50 log lines and then follows `.ralph/ralph.log` in real-time, including the current iteration number. Press `Ctrl+C` to stop monitoring; the run in Terminal 1 is unaffected.
-
----
-
-## Resume
-
-If a run is interrupted, restart it where it left off:
-
-```bash
-ralph --resume 10 -- claude -p @{PROMPT_FILE}
-```
-
-The current iteration is persisted to `.ralph/iteration.txt` before each agent call.
-
----
-
-## Stop Signal
-
-By default ralph stops when the agent output contains a line matching:
-
-```
+```text
 COMPLETE: true
 ```
 
-Override with `--stop-regex`:
+## Prompt modes
+
+`ralph` supports two prompt modes.
+
+### 1. Use an existing prompt file
 
 ```bash
-ralph --stop-regex '^DONE$' 5 -- my-agent
+ralph 5 --prompt-file prompts/task.md -- claude -p @{PROMPT_FILE}
 ```
 
-Or set the `STOP_REGEX` environment variable.
+Use this when you already have a hand-written prompt and want full control.
 
----
+### 2. Generate a prompt from goal and stack
 
-## Run Summary
-
-After each iteration ralph prints `git diff --stat HEAD` (when inside a Git repo) so you can see exactly what the agent changed:
-
-```
-📊 Changes since last commit (git diff --stat HEAD):
- src/api.js | 42 ++++++++++++++++++++++++--
- 1 file changed, 40 insertions(+), 2 deletions(-)
+```bash
+ralph \
+  8 \
+  --goal "Build a REST API for managing users" \
+  --stack "Go, chi, SQLite" \
+  -- claude -p @{PROMPT_FILE}
 ```
 
----
+This generates `.ralph/PROMPT.md` from the built-in template. If `PROMPT_TEMPLATE.md`
+exists in the working directory, it overrides the built-in template.
+Use `@{PROMPT_FILE}` in the agent command to pass the generated prompt to the agent.
 
-## Signals
+Rules:
 
-| Signal | Behaviour |
-|---|---|
-| `Ctrl+C` (SIGINT) | Exits with code 130, prints path to last agent output |
+- `--prompt-file` cannot be combined with `--goal` or `--stack`
+- `--stack` requires `--goal`
+- `{PROMPT_FILE}` requires one of the prompt modes above
 
----
+## Loop control
 
-## Environment Variables
-
-| Variable | Description |
-|---|---|
-| `RALPH_DELAY` | Default delay between iterations (overridden by `--delay`) |
-| `STOP_REGEX` | Default stop regex (overridden by `--stop-regex`) |
-
----
-
-## Exit Codes
-
-| Code | Meaning |
-|---|---|
-| `0` | Stop condition matched – agent signalled completion |
-| `2` | Max iterations reached without stop condition |
-| `130` | Interrupted by SIGINT |
-
----
-
-## File Layout
-
-```
-ralph                 # The compiled Go binary (built with: go build -o ralph .)
-PROMPT_TEMPLATE.md    # Optional: custom template with {{GOAL}} and {{STACK}} (overrides built-in)
-.ralph/
-  PROMPT.md           # Generated prompt (from --goal/--stack)
-  iteration.txt       # Current iteration (for --resume)
-  last-output.txt     # Last agent output
-  ralph.log           # Full run log
-  inbox-response.txt  # User response written by --action-inbox
-  specs/              # Named spec files (for --spec)
-    <name>.md
-  worktrees/          # Isolated worktrees (--worktree)
+```bash
+ralph 10 --timeout 180 --delay 3 -- claude -p "Continue until COMPLETE: true"
 ```
 
----
+Important options:
+
+- `--max-iterations <n>`: maximum loop count
+- `--delay <s>`: pause between iterations
+- `--timeout <s>`: limit one agent run
+- `--stop-regex <expr>`: custom completion pattern
+- `--resume`: continue from the last saved iteration
+- `--dry-run`: print resolved config without running
+- `--quiet`: reduce wrapper output
+
+`RALPH_DELAY` and `STOP_REGEX` can provide defaults when the matching flags are not set.
+
+## Worktree isolation
+
+```bash
+ralph 10 --worktree --goal "Refactor auth module" --stack "Python, FastAPI" \
+  -- claude -p @{PROMPT_FILE}
+```
+
+With `--worktree`, `ralph` creates a dedicated Git worktree so the agent does not
+modify your current checkout directly.
+
+- Worktree path: `.ralph/worktrees/<timestamp>/`
+- Branch: `ralph/run-<timestamp>`
+
+## Runtime files
+
+`ralph` stores run state in `.ralph/`:
+
+- `.ralph/PROMPT.md`
+- `.ralph/iteration.txt`
+- `.ralph/last-output.txt`
+- `.ralph/ralph.log`
+
+These files allow resume support and make the last run inspectable.
 
 ## Examples
 
-See the [`examples/`](examples/) directory:
-
-- [`basic.sh`](examples/basic.sh) – Simple run with a fixed iteration count
-- [`with-prompt.sh`](examples/with-prompt.sh) – Using `--goal` and `--stack` for auto-generated prompts
-- [`with-worktree.sh`](examples/with-worktree.sh) – Isolated Git worktree run
-- [`with-action-inbox.sh`](examples/with-action-inbox.sh) – Interactive Action Inbox pause-and-approve
-- [`with-spec.sh`](examples/with-spec.sh) – Loading a named spec from `.ralph/specs/`
-- [`quiet.sh`](examples/quiet.sh) – Running without banners (quiet mode)
-- [`monitor.sh`](examples/monitor.sh) – Live log monitoring in a second terminal
-
----
-
-## License
-
-MIT
+- [`examples/basic.sh`](examples/basic.sh): plain loop with an inline prompt
+- [`examples/with-prompt-file.sh`](examples/with-prompt-file.sh): use an existing prompt file
+- [`examples/with-prompt.sh`](examples/with-prompt.sh): generate a prompt from `--goal` and `--stack`
+- [`examples/quiet.sh`](examples/quiet.sh): suppress wrapper noise
+- [`examples/with-worktree.sh`](examples/with-worktree.sh): run in an isolated Git worktree

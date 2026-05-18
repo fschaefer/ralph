@@ -105,13 +105,6 @@ func Run(cfg *config.Config) int {
 			return 0
 		}
 
-		// Action inbox
-		if cfg.ActionInbox {
-			if err := handleActionInbox(cfg, output); err != nil {
-				logger.warn("action inbox error: " + err.Error())
-			}
-		}
-
 		if i < cfg.Iterations {
 			time.Sleep(time.Duration(cfg.Delay*1000) * time.Millisecond)
 		}
@@ -173,6 +166,8 @@ func runIteration(cfg *config.Config, iteration int, logger *fileLogger, _ *rege
 
 	if err := cmd.Start(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: cannot start agent: %v\n", err)
+		pw.Close()
+		<-done
 		return 1, ""
 	}
 
@@ -281,18 +276,6 @@ func printConfigHeader(cfg *config.Config) {
 		row("Worktree:", cfg.WorktreePath)
 	} else {
 		row("Worktree:", yesNo(cfg.Worktree))
-	}
-	if cfg.ActionInbox {
-		if cfg.InboxTimeout > 0 {
-			row("Action inbox:", fmt.Sprintf("yes (timeout: %ds)", cfg.InboxTimeout))
-		} else {
-			row("Action inbox:", "yes (timeout: unlimited)")
-		}
-	} else {
-		row("Action inbox:", "no")
-	}
-	if cfg.ExtendSpecName != "" {
-		row("Extend spec:", ".ralph/specs/"+cfg.ExtendSpecName+".md")
 	}
 	row("Log file:", cfg.LogFile)
 	if src := prompt.PromptSource(cfg); src != "" {

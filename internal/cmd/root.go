@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/fschaefer/ralph/internal/config"
-	"github.com/fschaefer/ralph/internal/monitor"
 	"github.com/fschaefer/ralph/internal/prompt"
 	"github.com/fschaefer/ralph/internal/runner"
 )
@@ -16,56 +16,51 @@ import (
 const version = "2.0.0"
 
 const usageText = `Usage:
-  ralph [options] [iterations] -- <agent-command...>
+  ralph [iterations] [options] -- <agent-command...>
 
-Options:
-  --delay <s>              Pause between iterations in seconds (default: 2, or $RALPH_DELAY)
-  --max-iterations <n>     Maximum number of iterations (alias for positional argument)
-  --timeout <s>            Per-iteration timeout in seconds; kills agent after <s>s (0 = disabled)
-  --stop-regex <pattern>   Regex that triggers a successful stop (default: $STOP_REGEX or ^COMPLETE:...)
-  --action-inbox           Pause loop when agent outputs "ACTION_REQUIRED: <msg>";
-                           wait for user input and write it to .ralph/inbox-response.txt
-  --inbox-timeout <s>      Timeout for user input in seconds (0 = unlimited, default: 0)
-  --monitor                Tail .ralph/ralph.log in real-time (open in a second terminal)
-  --quiet, -q              Suppress config header and iteration banners
-  --dry-run                Print configuration and exit without running the agent
-  --resume                 Resume from last saved iteration (.ralph/iteration.txt)
-  --worktree               Create an isolated Git worktree for this run (branch: ralph/run-<ts>)
-  --goal <text>            Project goal (fills {{GOAL}} in prompt template → .ralph/PROMPT.md)
-  --stack <text>           Tech stack (fills {{STACK}} in prompt template → .ralph/PROMPT.md)
-  --prompt-file <path>     Use a ready-made prompt file directly (overrides --goal/--stack)
-  --spec <name>            Load .ralph/specs/<name>.md as prompt;
-                           use {SPEC_FILE} in the agent command as a placeholder
-  --extend-spec <name>     Resume a completed project: appends a new task to tasks.md
-                           referencing .ralph/specs/<name>.md so the agent picks it up
-  -v, --version            Print version number and exit
+Description:
+  ralph runs an AI agent command in a loop until it signals completion
+  or the iteration limit is reached.
 
-Prompt integration:
-  With --goal and --stack the prompt template is filled and saved as .ralph/PROMPT.md.
-  The template is embedded in the binary; an external PROMPT_TEMPLATE.md in the project
-  directory takes priority over the built-in one.
-  Use {PROMPT_FILE} anywhere in your agent command as a placeholder for the path:
-    ralph --goal "Build a REST API" --stack "Node.js" 5 -- claude -p @{PROMPT_FILE}
+Prompt input:
+  Use exactly one prompt mode:
+    1. --prompt-file <path>
+       Use an existing prompt file as-is.
+    2. --goal <text> [--stack <text>]
+       Generate .ralph/PROMPT.md from the built-in template.
+       Use @{PROMPT_FILE} in the agent command to pass it to the agent.
+
+Loop options:
+  --max-iterations <n>    Maximum number of iterations
+  --delay <s>             Pause between iterations in seconds (default: 2, or $RALPH_DELAY)
+  --timeout <s>           Kill one agent run after <s> seconds (default: disabled)
+  --stop-regex <expr>     Stop when agent output matches this regex
+  --resume                Resume from .ralph/iteration.txt
+  --worktree              Run inside an isolated git worktree
+  --dry-run               Print resolved configuration and exit
+  --quiet, -q             Suppress config header and iteration banners
+  --version, -v           Print version and exit
+  --help, -h              Show help and exit
+
+Prompt options:
+  --prompt-file <path>    Use an existing prompt file
+  --goal <text>           Project goal for auto-generated prompt
+  --stack <text>          Tech stack for auto-generated prompt
+
+Rules:
+  --prompt-file cannot be combined with --goal or --stack.
+  --stack requires --goal.
+  {PROMPT_FILE} requires one of the prompt modes above.
+  The -- separator is required before the agent command.
 
 Examples:
-  ralph 3 -- claude -p "Just output OK"
-  ralph --max-iterations 3 -- claude -p "Just output OK"
-  ralph --delay 5 3 -- claude -p "Just output OK"
-  ralph --stop-regex '^DONE$' 3 -- claude -p "Just output OK"
-  ralph --dry-run 3 -- claude -p "Just output OK"
-  ralph --resume 3 -- claude -p @{PROMPT_FILE}
-  ralph --worktree 5 -- claude -p @{PROMPT_FILE}
-  ralph --goal "Build a REST API" --stack "Node.js, Express" 5 -- claude -p @{PROMPT_FILE}
-  ralph --timeout 120 5 -- claude -p @{PROMPT_FILE}
-  ralph --action-inbox 5 -- claude -p @{PROMPT_FILE}
-  ralph --action-inbox --inbox-timeout 120 5 -- claude -p @{PROMPT_FILE}
-  ralph --spec myfeature 5 -- claude -p @{SPEC_FILE}
-  ralph --monitor        # in a second terminal while a run is active
+  ralph 5 -- claude -p "Fix the failing tests and print COMPLETE: true when done"
+  ralph 8 --goal "Build a REST API" --stack "Go, chi, SQLite" -- claude -p @{PROMPT_FILE}
+  ralph 4 --prompt-file prompts/review.md --timeout 180 -- claude -p @{PROMPT_FILE}
+  ralph 10 --resume --worktree -- claude -p "Continue from tasks.md and progress.txt"
 
-Note:
-  By default the loop stops when the agent output contains a line matching:
-    COMPLETE: true
-  Customise via --stop-regex or the STOP_REGEX environment variable.
+Default stop signal:
+  COMPLETE: true
 `
 
 // Execute is the entrypoint called from main.
@@ -83,7 +78,6 @@ func Execute() {
 
 	// Loop settings
 	fs.IntVar(&cfg.Iterations, "max-iterations", 5, "Maximum number of loop iterations")
-	fs.IntVar(&cfg.Iterations, "n", 5, "Maximum number of loop iterations (shorthand)")
 	fs.Float64Var(&cfg.Delay, "delay", 2, "Pause between iterations in seconds (env: RALPH_DELAY)")
 	fs.IntVar(&cfg.Timeout, "timeout", 0, "Per-iteration timeout in seconds; kills agent after <s>s (0 = disabled)")
 	fs.StringVar(&cfg.StopRegex, "stop-regex", "", "Regex that triggers a successful stop (env: STOP_REGEX)")
@@ -92,20 +86,13 @@ func Execute() {
 	fs.BoolVar(&cfg.DryRun, "dry-run", false, "Print configuration and exit without running the agent")
 	fs.BoolVar(&cfg.Resume, "resume", false, "Resume from last saved iteration (.ralph/iteration.txt)")
 	fs.BoolVar(&cfg.Worktree, "worktree", false, "Create an isolated Git worktree for this run (branch: ralph/run-<ts>)")
-	fs.BoolVar(&cfg.Monitor, "monitor", false, "Tail .ralph/ralph.log in real-time (open in a second terminal)")
 
-	// Prompt / spec
+	// Prompt
 	fs.StringVar(&cfg.Goal, "goal", "", "Project goal (fills {{GOAL}} in prompt template → .ralph/PROMPT.md)")
 	fs.StringVar(&cfg.Stack, "stack", "", "Tech stack (fills {{STACK}} in prompt template → .ralph/PROMPT.md)")
 	fs.StringVar(&cfg.PromptFileOverride, "prompt-file", "", "Use a ready-made prompt file directly (overrides --goal/--stack)")
-	fs.StringVar(&cfg.SpecName, "spec", "", "Load .ralph/specs/<name>.md as prompt; use {SPEC_FILE} in agent command")
-	fs.StringVar(&cfg.ExtendSpecName, "extend-spec", "", "Resume a completed project: appends a new task to tasks.md referencing .ralph/specs/<name>.md")
 
-	// Action inbox
-	fs.BoolVar(&cfg.ActionInbox, "action-inbox", false, `Pause loop when agent outputs "ACTION_REQUIRED: <msg>"; wait for user input`)
-	fs.IntVar(&cfg.InboxTimeout, "inbox-timeout", 0, "Timeout for user input in seconds (0 = unlimited; requires --action-inbox)")
-
-	// No arguments: print help to stdout and exit 0 (mirrors ralph.sh behaviour).
+	// No arguments: print help to stdout and exit 0.
 	if len(os.Args) == 1 {
 		fmt.Print(usageText)
 		os.Exit(0)
@@ -113,8 +100,13 @@ func Execute() {
 
 	// Split os.Args at '--' to separate ralph flags from agent command.
 	ralphArgs, agentArgs := splitAtDashDash(os.Args[1:])
+	flagArgs, iterationArg, err := extractIterationArg(ralphArgs)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		os.Exit(2)
+	}
 
-	if err := fs.Parse(ralphArgs); err != nil {
+	if err := fs.Parse(flagArgs); err != nil {
 		// flag.ContinueOnError already printed the error; -h/-help exits 0 via ErrHelp.
 		if err == flag.ErrHelp {
 			os.Exit(0)
@@ -145,30 +137,26 @@ func Execute() {
 		}
 	}
 
-	// --monitor needs no agent command; start tail loop and return.
-	if cfg.Monitor {
-		if err := monitor.Run(cfg.RalphDir); err != nil {
-			fmt.Fprintln(os.Stderr, "Error:", err)
-			os.Exit(1)
-		}
-		return
-	}
-
-	// The first remaining positional arg (before --) may be an iteration count.
-	remaining := fs.Args()
-	if len(remaining) > 0 {
-		if n, err := strconv.Atoi(remaining[0]); err == nil {
-			cfg.Iterations = n
-			remaining = remaining[1:]
-		}
-		if len(remaining) > 0 {
-			fmt.Fprintf(os.Stderr, "Error: unexpected positional argument %q (did you forget '--'?)\n", remaining[0])
+	if iterationArg != "" {
+		if isFlagChanged(fs, "max-iterations") {
+			fmt.Fprintln(os.Stderr, "Error: use either positional iterations or --max-iterations, not both")
 			os.Exit(2)
 		}
+		n, err := strconv.Atoi(iterationArg)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: invalid iteration count %q\n", iterationArg)
+			os.Exit(2)
+		}
+		cfg.Iterations = n
 	}
 
 	// Agent command follows '--'.
 	cfg.AgentCmd = agentArgs
+
+	if err := validateConfig(cfg); err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		os.Exit(2)
+	}
 
 	// Require agent command for non-dry-run modes.
 	if len(cfg.AgentCmd) == 0 && !cfg.DryRun {
@@ -180,9 +168,8 @@ func Execute() {
 	cfg.LogFile = cfg.RalphDir + "/ralph.log"
 	cfg.LastOutputFile = cfg.RalphDir + "/last-output.txt"
 	cfg.IterationFile = cfg.RalphDir + "/iteration.txt"
-	cfg.InboxResponseFile = cfg.RalphDir + "/inbox-response.txt"
 
-	// Resolve prompt file and substitute {PROMPT_FILE}/{SPEC_FILE} in agent args.
+	// Resolve prompt file and substitute {PROMPT_FILE} in agent args.
 	if err := prompt.Resolve(cfg); err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)
 		os.Exit(1)
@@ -202,17 +189,68 @@ func Execute() {
 		}
 	}
 
-	// --extend-spec: inject new task after entering the worktree (if any).
-	if cfg.ExtendSpecName != "" {
-		if err := runner.ExtendSpec(cfg); err != nil {
-			fmt.Fprintln(os.Stderr, "Error:", err)
-			os.Exit(1)
-		}
-	}
-
 	// Run the main loop; exit with the returned code.
 	exitCode := runner.Run(cfg)
 	os.Exit(exitCode)
+}
+
+func validateConfig(cfg *config.Config) error {
+	switch {
+	case cfg.PromptFileOverride != "" && cfg.Goal != "":
+		return fmt.Errorf("--prompt-file cannot be combined with --goal")
+	case cfg.PromptFileOverride != "" && cfg.Stack != "":
+		return fmt.Errorf("--prompt-file cannot be combined with --stack")
+	case cfg.Stack != "" && cfg.Goal == "":
+		return fmt.Errorf("--stack requires --goal")
+	}
+
+	for _, arg := range cfg.AgentCmd {
+		switch {
+		case strings.Contains(arg, "{SPEC_FILE}"):
+			return fmt.Errorf("{SPEC_FILE} is no longer supported; use --prompt-file or --goal")
+		case strings.Contains(arg, "{PROMPT_FILE}") && cfg.PromptFileOverride == "" && cfg.Goal == "":
+			return fmt.Errorf("{PROMPT_FILE} requires --prompt-file or --goal")
+		}
+	}
+
+	return nil
+}
+
+func extractIterationArg(args []string) (flagArgs []string, iterationArg string, err error) {
+	valueFlags := map[string]bool{
+		"max-iterations": true,
+		"delay":          true,
+		"timeout":        true,
+		"stop-regex":     true,
+		"prompt-file":    true,
+		"goal":           true,
+		"stack":          true,
+	}
+
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if strings.HasPrefix(arg, "-") && arg != "-" {
+			flagArgs = append(flagArgs, arg)
+
+			name := strings.TrimLeft(arg, "-")
+			name, _, hasValue := strings.Cut(name, "=")
+			if valueFlags[name] && !hasValue && i+1 < len(args) {
+				i++
+				flagArgs = append(flagArgs, args[i])
+			}
+			continue
+		}
+
+		if iterationArg != "" {
+			return nil, "", fmt.Errorf("unexpected positional argument %q (did you forget '--'?)", arg)
+		}
+		if _, err := strconv.Atoi(arg); err != nil {
+			return nil, "", fmt.Errorf("unexpected positional argument %q (did you forget '--'?)", arg)
+		}
+		iterationArg = arg
+	}
+
+	return flagArgs, iterationArg, nil
 }
 
 // splitAtDashDash splits args into the part before '--' and the part after.
