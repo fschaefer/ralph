@@ -147,7 +147,9 @@ func runIteration(cfg *config.Config, iteration int, logger *fileLogger, _ *rege
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: cannot open last-output.txt: %v\n", err)
 	}
-	defer lof.Close()
+	if lof != nil {
+		defer lof.Close()
+	}
 
 	// Tee: stdout+stderr → terminal and last-output.txt simultaneously
 	pr, pw := io.Pipe()

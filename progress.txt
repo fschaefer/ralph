@@ -1,0 +1,4 @@
+2026-05-18: Started review loop. Verified existing packages with repo-local Go cache; identified missing `--prompt-file` existence validation as a concrete bug.
+2026-05-18: Implemented prompt-file existence validation, added focused prompt resolver tests, and verified with gofmt, go test, go vet, and go build using repo-local caches.
+2026-05-18: Added `.cache/` to `.gitignore` because repo-local Go verification caches were already appearing as untracked artifacts.
+2026-05-18: Fixed outdated README.md reference to cobra dependency (project now uses stdlib only). Ran gofmt to normalize formatting across source files. Committed all changes.
