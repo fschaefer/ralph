@@ -20,7 +20,7 @@ go install .
 
 ### Dependencies
 
-Go modules are used; all dependencies (cobra) are declared in `go.mod` and fetched automatically by `go build`/`go install`.
+No external dependencies – ralph uses only the Go standard library.
 
 Optionally requires `git` for `--resume`, `--worktree`, and run summaries.
 

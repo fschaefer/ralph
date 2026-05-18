@@ -357,4 +357,3 @@ func stripTerminalCodes(s string) string {
 	}
 	return out.String()
 }
-

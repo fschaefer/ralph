@@ -236,4 +236,3 @@ func isFlagChanged(fs *flag.FlagSet, name string) bool {
 	})
 	return changed
 }
-

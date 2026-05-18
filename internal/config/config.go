@@ -3,22 +3,22 @@ package config
 // Config holds all runtime configuration for a ralph run.
 type Config struct {
 	// Loop settings
-	Iterations   int
-	Delay        float64
-	Timeout      int
-	StopRegex    string
-	Resume       bool
-	Quiet        bool
-	DryRun       bool
-	Monitor      bool
-	Worktree     bool
+	Iterations int
+	Delay      float64
+	Timeout    int
+	StopRegex  string
+	Resume     bool
+	Quiet      bool
+	DryRun     bool
+	Monitor    bool
+	Worktree   bool
 
 	// Prompt / spec
-	Goal             string
-	Stack            string
+	Goal               string
+	Stack              string
 	PromptFileOverride string
-	SpecName         string
-	ExtendSpecName   string
+	SpecName           string
+	ExtendSpecName     string
 
 	// Action inbox
 	ActionInbox  bool

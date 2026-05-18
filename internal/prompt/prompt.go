@@ -79,6 +79,9 @@ func Resolve(cfg *config.Config) error {
 
 	switch {
 	case cfg.PromptFileOverride != "":
+		if _, err := os.Stat(cfg.PromptFileOverride); err != nil {
+			return fmt.Errorf("prompt file not found: %s", cfg.PromptFileOverride)
+		}
 		cfg.EffectivePromptFile = cfg.PromptFileOverride
 
 	case cfg.SpecName != "":
