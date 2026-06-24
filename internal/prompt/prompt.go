@@ -112,6 +112,17 @@ Then end your turn. Ralph will pause (if run with --action-inbox) and wait for y
 # Artifacts: (check .ralph/work/)
 </workflow_state>`
 
+// Refresh regenerates .ralph/PROMPT.md with a fresh snapshot of the workspace
+// (git status, git log, directory structure). It is a no-op when the prompt
+// was provided via --prompt-file, because that file is managed by the user.
+func Refresh(cfg *config.Config) error {
+	if cfg.Goal == "" && cfg.Stack == "" {
+		return nil
+	}
+	_, err := generatePromptFile(cfg)
+	return err
+}
+
 // Resolve sets cfg.EffectivePromptFile, generates .ralph/PROMPT.md
 // if --goal/--stack are provided, and substitutes {PROMPT_FILE} placeholders
 // in cfg.AgentCmd. Returns an error if a referenced file cannot be found.

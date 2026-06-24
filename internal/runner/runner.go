@@ -77,6 +77,11 @@ func Run(cfg *config.Config) int {
 			printIterBanner(i, cfg.Iterations)
 		}
 
+		// Regenerate prompt with fresh workspace snapshot before each iteration.
+		if err := prompt.Refresh(cfg); err != nil {
+			logger.warn("could not refresh prompt: " + err.Error())
+		}
+
 		exitCode, output := runIteration(cfg, i, logger, stopRE)
 
 		// Git diff stat
