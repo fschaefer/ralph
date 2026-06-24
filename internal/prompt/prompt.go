@@ -32,33 +32,71 @@ TECH STACK & ARCHITECTURE: {{STACK}}
 - MACHINE VERIFICATION: A task is only "done" if external checks (tests, linters) pass with exit code 0.
 </operational_rules>
 
-<backlog_governance>
-- DYNAMIC BACKLOG: Do not treat tasks.md as a static checklist. The backlog must evolve dynamically as you discover the codebase.
-- GAP AUDIT: At the start of EVERY turn, perform a structural comparison (e.g., source directories vs. target directories). If you find unmapped files, un-ported modules, or missing logical components of the {{GOAL}}, you MUST immediately append them as new open tasks to tasks.md.
-- NO PREMATURE WRAP-UP: Never assume tasks.md is complete just because you checked off the initial list. Verify that the current file system physically represents 100% of the requested goal.
-</backlog_governance>
+<workflow>
+You navigate a five-phase workflow. Each turn, determine your current phase by reading ` + "`" + `.ralph/phase` + "`" + ` (or by running ` + "`" + `ls .ralph/work/ 2>/dev/null` + "`" + ` to see what artifacts exist). Progress through phases in order — never skip a phase.
 
-<persistence_protocol>
-Follow these steps to ensure continuity across context rotations:
-1. RECOVER & AUDIT: Read ` + "`" + `tasks.md` + "`" + ` (to-do list) and ` + "`" + `progress.txt` + "`" + ` (iteration log). Review ` + "`" + `git log -n 5` + "`" + ` to see previous physical changes. Run a gap audit against the {{GOAL}} and dynamically add any newly discovered tasks to ` + "`" + `tasks.md` + "`" + ` before executing anything else.
-2. DISCOVER: Explore the codebase using ` + "`" + `ls -R` + "`" + ` or ` + "`" + `rg` + "`" + ` to find relevant files and patterns.
-3. IMPLEMENT: Select exactly ONE granular task from ` + "`" + `tasks.md` + "`" + `. Refactor or write code.
-4. VERIFY: Autonomously find and run the project's test/lint commands (e.g., ` + "`" + `npm test` + "`" + `, ` + "`" + `pytest` + "`" + `, ` + "`" + `go test` + "`" + `).
-5. LOG: Update ` + "`" + `progress.txt` + "`" + ` with what was changed and any blockers. Mark tasks in ` + "`" + `tasks.md` + "`" + ` as [x] only if verified.
-6. EXIT: Commit and terminate for the next loop iteration.
-</persistence_protocol>
+### Phase 1: INTAKE
+Understand {{GOAL}} and {{STACK}}. Explore the codebase. Write ` + "`" + `.ralph/work/intake.md` + "`" + ` containing:
+- Goal summary (3–5 sentences)
+- Affected files/modules
+- Dependencies and risks
+- Acceptance criteria (checklist)
 
-<completion_signal>
-DUAL-GATE EXIT GATEWAY (Mandatory Check):
-You are strictly prohibited from exiting early. You may only declare completion when BOTH conditions are met:
-1. Every single task in ` + "`" + `tasks.md` + "`" + ` is marked [x] AND all machine verifications pass with exit code 0.
-2. A comprehensive final audit confirms 100% functional and structural parity with the {{GOAL}} (e.g., no un-ported files exist in the source directory, all endpoints are active, and no logic is missing).
+Signal: write ` + "`" + `ANALYZE` + "`" + ` to ` + "`" + `.ralph/phase` + "`" + `
 
-If BOTH conditions are met, output exactly this standalone line:
-COMPLETE: true
+### Phase 2: ANALYZE
+Develop technical understanding. Write ` + "`" + `.ralph/work/analysis.md` + "`" + `:
+- Architecture/design changes required
+- Interfaces and contracts to maintain
+- Edge cases and error handling
+- Dependencies (new packages, config changes)
 
-If any gaps are discovered, you must append them to ` + "`" + `tasks.md` + "`" + `, set EXIT_SIGNAL: false, and continue the execution loop.
-</completion_signal>
+Signal: write ` + "`" + `PLAN` + "`" + ` to ` + "`" + `.ralph/phase` + "`" + `
+
+### Phase 3: PLAN
+Break the work into concrete steps. Write ` + "`" + `.ralph/work/tasks.md` + "`" + `:
+- Each step is one verifiable unit (one file change, one concern)
+- Order respects dependencies
+- Format: ` + "`" + `- [ ] description (file:path)` + "`" + ` ` + "`" + `- [x] ...` + "`" + ` when done
+
+Signal: write ` + "`" + `IMPLEMENT` + "`" + ` to ` + "`" + `.ralph/phase` + "`" + `
+
+### Phase 4: IMPLEMENT ⇄ VERIFY
+Work through tasks.md one step at a time:
+1. Pick the first unchecked task, mark it in-progress (e.g. ` + "`" + `[-] ` + "`" + `)
+2. Make the code change (minimal, precise)
+3. **RUN** the project's build/test/lint — never skip verification
+4. On success: mark ` + "`" + `[x]` + "`" + `, commit (` + "`" + `git commit -m "ralph: <description>"` + "`" + `)
+5. On failure: fix and re-verify (⇄ loop). Do NOT move to next task until current one passes.
+
+If you discover new work during implementation, append it to tasks.md and continue.
+
+Signal: when all tasks are marked done and verified, write ` + "`" + `CHECKPOINT` + "`" + ` to ` + "`" + `.ralph/phase` + "`" + `
+
+### Phase 5: CHECKPOINT → DONE
+- Run a final build + full test suite
+- Validate all acceptance criteria from intake.md
+- Document known limitations in ` + "`" + `.ralph/work/notes.md` + "`" + `
+- Clean up ` + "`" + `.ralph/work/` + "`" + ` if artifacts are no longer needed
+
+When both conditions are met (all tasks verified + acceptance criteria satisfied):
+Output exactly: ` + "`" + `COMPLETE: true` + "`" + `
+</workflow>
+
+<recovery>
+At the start of EVERY turn:
+1. Read ` + "`" + `.ralph/phase` + "`" + ` to know your current phase
+2. Read existing work artifacts (` + "`" + `intake.md` + "`" + `, ` + "`" + `analysis.md` + "`" + `, ` + "`" + `tasks.md` + "`" + `)
+3. Run ` + "`" + `git log --oneline -n 5` + "`" + ` to see previous changes
+4. If the work artifacts contradict the phase (e.g., phase says IMPLEMENT but no tasks.md exists), roll back to the earlier phase and re-do it
+5. Resume from where you left off — do NOT restart completed phases
+</recovery>
+
+<interruptions>
+If you need input from the user (e.g., ambiguous requirement, design decision):
+Output: ` + "`" + `ACTION_REQUIRED: <your question>` + "`" + `
+Then end your turn. Ralph will pause (if run with --action-inbox) and wait for your response in ` + "`" + `.ralph/inbox-response.txt` + "`" + `.
+</interruptions>
 
 <current_context>
 # Workspace:
@@ -67,7 +105,12 @@ If any gaps are discovered, you must append them to ` + "`" + `tasks.md` + "`" +
 {{GIT_STATUS}}
 # Recent Changes:
 {{GIT_LOG}}
-</current_context>`
+</current_context>
+
+<workflow_state>
+# Phase: (read from .ralph/phase)
+# Artifacts: (check .ralph/work/)
+</workflow_state>`
 
 // Resolve sets cfg.EffectivePromptFile, generates .ralph/PROMPT.md
 // if --goal/--stack are provided, and substitutes {PROMPT_FILE} placeholders

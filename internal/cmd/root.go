@@ -57,7 +57,7 @@ Examples:
   ralph 5 -- claude -p "Fix the failing tests and print COMPLETE: true when done"
   ralph 8 --goal "Build a REST API" --stack "Go, chi, SQLite" -- claude -p @{PROMPT_FILE}
   ralph 4 --prompt-file prompts/review.md --timeout 180 -- claude -p @{PROMPT_FILE}
-  ralph 10 --resume --worktree -- claude -p "Continue from tasks.md and progress.txt"
+  ralph 10 --resume --worktree -- claude -p "Continue from tasks.md"
 
 Default stop signal:
   COMPLETE: true
