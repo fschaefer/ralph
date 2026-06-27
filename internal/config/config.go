@@ -27,6 +27,7 @@ type Config struct {
 	IterationFile       string
 	EffectivePromptFile string
 	WorktreePath        string
+	PromptSourceNote    string
 }
 
 // New returns a Config with sensible defaults.

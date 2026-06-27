@@ -137,6 +137,7 @@ func Resolve(cfg *config.Config) error {
 			return fmt.Errorf("prompt file not found: %s", cfg.PromptFileOverride)
 		}
 		cfg.EffectivePromptFile = cfg.PromptFileOverride
+		cfg.PromptSourceNote = cfg.EffectivePromptFile + " (--prompt-file)"
 
 	case cfg.Goal != "" || cfg.Stack != "":
 		generated, err := generatePromptFile(cfg)
@@ -144,6 +145,11 @@ func Resolve(cfg *config.Config) error {
 			return err
 		}
 		cfg.EffectivePromptFile = generated
+		if _, err := os.Stat("PROMPT_TEMPLATE.md"); err == nil {
+			cfg.PromptSourceNote = cfg.EffectivePromptFile + " (from PROMPT_TEMPLATE.md)"
+		} else {
+			cfg.PromptSourceNote = cfg.EffectivePromptFile + " (built-in template)"
+		}
 	}
 
 	// Substitute {PROMPT_FILE} placeholders in agent args.
@@ -189,15 +195,5 @@ func captureCmd(name string, args ...string) string {
 
 // PromptSource returns a human-readable description of where the prompt came from.
 func PromptSource(cfg *config.Config) string {
-	switch {
-	case cfg.PromptFileOverride != "":
-		return cfg.EffectivePromptFile + " (--prompt-file)"
-	case cfg.Goal != "" || cfg.Stack != "":
-		if _, err := os.Stat("PROMPT_TEMPLATE.md"); err == nil {
-			return cfg.EffectivePromptFile + " (from PROMPT_TEMPLATE.md)"
-		}
-		return cfg.EffectivePromptFile + " (built-in template)"
-	default:
-		return ""
-	}
+	return cfg.PromptSourceNote
 }
