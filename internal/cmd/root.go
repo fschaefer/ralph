@@ -86,6 +86,7 @@ func Execute() {
 	fs.BoolVar(&cfg.DryRun, "dry-run", false, "Print configuration and exit without running the agent")
 	fs.BoolVar(&cfg.Resume, "resume", false, "Resume from last saved iteration (.ralph/iteration.txt)")
 	fs.BoolVar(&cfg.Worktree, "worktree", false, "Create an isolated Git worktree for this run (branch: ralph/run-<ts>)")
+	fs.BoolVar(&cfg.ActionInbox, "action-inbox", false, "Pause and wait for user response in .ralph/inbox-response.txt when agent requests input")
 
 	// Prompt
 	fs.StringVar(&cfg.Goal, "goal", "", "Project goal (fills {{GOAL}} in prompt template → .ralph/PROMPT.md)")
@@ -161,6 +162,12 @@ func Execute() {
 	// Require agent command for non-dry-run modes.
 	if len(cfg.AgentCmd) == 0 && !cfg.DryRun {
 		fmt.Fprintln(os.Stderr, "Error: agent command is missing – use '--' to separate ralph flags from the agent command")
+		os.Exit(2)
+	}
+
+	// Verify that required external programs are available.
+	if err := checkDependencies(cfg); err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
 		os.Exit(2)
 	}
 

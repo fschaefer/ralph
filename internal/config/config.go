@@ -17,6 +17,9 @@ type Config struct {
 	Stack              string
 	PromptFileOverride string
 
+	// Action inbox (future: pause and wait for user response)
+	ActionInbox bool
+
 	// Agent command (after --)
 	AgentCmd []string
 
