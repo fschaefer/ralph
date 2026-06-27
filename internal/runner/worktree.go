@@ -48,12 +48,17 @@ func SetupWorktree(cfg *config.Config) error {
 	if cfg.EffectivePromptFile != "" {
 		if _, err := os.Stat(cfg.EffectivePromptFile); err == nil {
 			dest := filepath.Join(wtRalphDir, "PROMPT.md")
-			data, _ := os.ReadFile(cfg.EffectivePromptFile)
-			_ = os.WriteFile(dest, data, 0o644)
-			for i, arg := range cfg.AgentCmd {
-				cfg.AgentCmd[i] = strings.ReplaceAll(arg, cfg.EffectivePromptFile, dest)
+			data, err := os.ReadFile(cfg.EffectivePromptFile)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: cannot read prompt file for worktree: %v\n", err)
+			} else if err := os.WriteFile(dest, data, 0o644); err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: cannot write prompt file to worktree: %v\n", err)
+			} else {
+				for i, arg := range cfg.AgentCmd {
+					cfg.AgentCmd[i] = strings.ReplaceAll(arg, cfg.EffectivePromptFile, dest)
+				}
+				cfg.EffectivePromptFile = dest
 			}
-			cfg.EffectivePromptFile = dest
 		}
 	}
 
