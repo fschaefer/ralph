@@ -37,6 +37,7 @@ Loop options:
   --stop-regex <expr>     Stop when agent output matches this regex
   --resume                Resume from .ralph/iteration.txt
   --worktree              Run inside an isolated git worktree
+  --clean-all             Remove the entire .ralph/ directory
   --cleanup               Remove worktrees from previous runs in .ralph/worktrees/
   --dry-run               Print resolved configuration and exit
   --quiet, -q             Suppress config header and iteration banners
@@ -87,6 +88,7 @@ func Execute() {
 	fs.BoolVar(&cfg.DryRun, "dry-run", false, "Print configuration and exit without running the agent")
 	fs.BoolVar(&cfg.Resume, "resume", false, "Resume from last saved iteration (.ralph/iteration.txt)")
 	fs.BoolVar(&cfg.Worktree, "worktree", false, "Create an isolated Git worktree for this run (branch: ralph/run-<ts>)")
+	fs.BoolVar(&cfg.CleanAll, "clean-all", false, "Remove the entire .ralph/ directory")
 	fs.BoolVar(&cfg.Cleanup, "cleanup", false, "Remove all worktrees from previous runs in .ralph/worktrees/")
 
 	// Prompt
@@ -160,10 +162,13 @@ func Execute() {
 		os.Exit(2)
 	}
 
-	// Require agent command for non-dry-run modes.
-	if len(cfg.AgentCmd) == 0 && !cfg.DryRun {
-		fmt.Fprintln(os.Stderr, "Error: agent command is missing – use '--' to separate ralph flags from the agent command")
-		os.Exit(2)
+	// --clean-all: remove entire .ralph directory and exit.
+	if cfg.CleanAll {
+		if err := runner.CleanAll(cfg); err != nil {
+			fmt.Fprintln(os.Stderr, "Error:", err)
+			os.Exit(1)
+		}
+		return
 	}
 
 	// --cleanup: remove worktrees from previous runs.
@@ -173,6 +178,12 @@ func Execute() {
 			os.Exit(1)
 		}
 		return
+	}
+
+	// Require agent command for non-dry-run modes.
+	if len(cfg.AgentCmd) == 0 && !cfg.DryRun {
+		fmt.Fprintln(os.Stderr, "Error: agent command is missing – use '--' to separate ralph flags from the agent command")
+		os.Exit(2)
 	}
 
 	// Set up derived paths for runtime state files.

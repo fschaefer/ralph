@@ -20,6 +20,9 @@ type Config struct {
 	// Cleanup removes worktrees from previous runs
 	Cleanup bool
 
+	// CleanAll removes the entire .ralph directory
+	CleanAll bool
+
 	// Agent command (after --)
 	AgentCmd []string
 
