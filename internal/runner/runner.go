@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -214,7 +215,7 @@ type fileLogger struct {
 }
 
 func newLogger(logFile string) *fileLogger {
-	dir := strings.TrimSuffix(logFile, "/ralph.log")
+	dir := filepath.Dir(logFile)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: cannot create log directory %s: %v\n", dir, err)
 		return &fileLogger{}
