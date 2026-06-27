@@ -95,7 +95,7 @@ At the start of EVERY turn:
 <interruptions>
 If you need input from the user (e.g., ambiguous requirement, design decision):
 Output: ` + "`" + `ACTION_REQUIRED: <your question>` + "`" + `
-Then end your turn. Ralph will pause (if run with --action-inbox) and wait for your response in ` + "`" + `.ralph/inbox-response.txt` + "`" + `.
+Then end your turn. Ralph will pause (if run with --await-input) and wait for your response in ` + "`" + `.ralph/user-response.txt` + "`" + `.
 </interruptions>
 
 <current_context>
