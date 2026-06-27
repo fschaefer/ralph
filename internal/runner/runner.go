@@ -210,12 +210,16 @@ type fileLogger struct {
 
 func newLogger(logFile string) *fileLogger {
 	dir := strings.TrimSuffix(logFile, "/ralph.log")
-	if err := os.MkdirAll(dir, 0o755); err == nil {
-		if f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); err == nil {
-			return &fileLogger{f: f}
-		}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: cannot create log directory %s: %v\n", dir, err)
+		return &fileLogger{}
 	}
-	return &fileLogger{}
+	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: cannot open log file %s: %v\n", logFile, err)
+		return &fileLogger{}
+	}
+	return &fileLogger{f: f}
 }
 
 func (l *fileLogger) info(msg string) {
