@@ -79,3 +79,45 @@ func SetupWorktree(cfg *config.Config) error {
 
 	return nil
 }
+
+// CleanupWorktrees removes all worktrees from previous runs in .ralph/worktrees/.
+func CleanupWorktrees(cfg *config.Config) error {
+	rootBytes, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
+	if err != nil {
+		return fmt.Errorf("getting git root: %w", err)
+	}
+	gitRoot := strings.TrimSpace(string(rootBytes))
+
+	wtDir := filepath.Join(gitRoot, ".ralph", "worktrees")
+	entries, err := os.ReadDir(wtDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Println("No worktrees to clean up.")
+			return nil
+		}
+		return fmt.Errorf("reading worktrees dir: %w", err)
+	}
+
+	cleaned := 0
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		wtPath := filepath.Join(wtDir, entry.Name())
+		// Prune the worktree from git, then remove the directory
+		out, err := exec.Command("git", "worktree", "remove", "--force", wtPath).CombinedOutput()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: could not remove worktree %s: %s\n", wtPath, strings.TrimSpace(string(out)))
+			continue
+		}
+		cleaned++
+		fmt.Printf("🧹 Removed worktree: %s\n", wtPath)
+	}
+
+	if cleaned == 0 {
+		fmt.Println("No worktrees to clean up.")
+	} else {
+		fmt.Printf("Cleaned up %d worktree(s).\n", cleaned)
+	}
+	return nil
+}

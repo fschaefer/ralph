@@ -87,6 +87,7 @@ func Execute() {
 	fs.BoolVar(&cfg.Resume, "resume", false, "Resume from last saved iteration (.ralph/iteration.txt)")
 	fs.BoolVar(&cfg.Worktree, "worktree", false, "Create an isolated Git worktree for this run (branch: ralph/run-<ts>)")
 	fs.BoolVar(&cfg.ActionInbox, "action-inbox", false, "Pause and wait for user response in .ralph/inbox-response.txt when agent requests input")
+	fs.BoolVar(&cfg.Cleanup, "cleanup", false, "Remove all worktrees from previous runs in .ralph/worktrees/")
 
 	// Prompt
 	fs.StringVar(&cfg.Goal, "goal", "", "Project goal (fills {{GOAL}} in prompt template → .ralph/PROMPT.md)")
@@ -194,6 +195,15 @@ func Execute() {
 			fmt.Fprintln(os.Stderr, "Error:", err)
 			os.Exit(1)
 		}
+	}
+
+	// --cleanup: remove worktrees from previous runs.
+	if cfg.Cleanup {
+		if err := runner.CleanupWorktrees(cfg); err != nil {
+			fmt.Fprintln(os.Stderr, "Error:", err)
+			os.Exit(1)
+		}
+		return
 	}
 
 	// Run the main loop; exit with the returned code.

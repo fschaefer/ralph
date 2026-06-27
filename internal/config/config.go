@@ -20,6 +20,9 @@ type Config struct {
 	// Action inbox (future: pause and wait for user response)
 	ActionInbox bool
 
+	// Cleanup removes worktrees from previous runs
+	Cleanup bool
+
 	// Agent command (after --)
 	AgentCmd []string
 
