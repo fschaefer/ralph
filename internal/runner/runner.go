@@ -58,12 +58,12 @@ func Run(cfg *config.Config) int {
 	startTS := time.Now()
 	var statuses []iterStatus
 
-	sigCh, stopSig := trapSIGINT()
+	ctx, stopSig := notifyContext()
 	defer stopSig()
 
 	for i := startIteration; i <= cfg.Iterations; i++ {
 		select {
-		case <-sigCh:
+		case <-ctx.Done():
 			fmt.Println()
 			printRunSummary(statuses, time.Since(startTS), "⚠️  Interrupted (SIGINT)")
 			fmt.Fprintf(os.Stderr, "Last output in %s\n", cfg.LastOutputFile)
@@ -84,7 +84,7 @@ func Run(cfg *config.Config) int {
 			logger.warn("could not refresh prompt: " + err.Error())
 		}
 
-		exitCode, output := runIteration(cfg, i, logger)
+		exitCode, output := runIteration(ctx, cfg, i, logger)
 
 		// Git diff stat
 		if diffStat := gitDiffStat(); diffStat != "" {
@@ -93,9 +93,10 @@ func Run(cfg *config.Config) int {
 			fmt.Println(diffStat)
 		}
 
+		stopped := stopRE.MatchString(output)
 		var note string
 		switch {
-		case stopRE.MatchString(output):
+		case stopped:
 			note = "✓ stop"
 		case cfg.Timeout > 0 && exitCode == 124:
 			note = "⏱ timeout"
@@ -106,7 +107,7 @@ func Run(cfg *config.Config) int {
 		}
 		statuses = append(statuses, iterStatus{iter: i, code: exitCode, note: note})
 
-		if stopRE.MatchString(output) {
+		if stopped {
 			fmt.Printf("✅ Stop condition matched in iteration %d\n", i)
 			printRunSummary(statuses, time.Since(startTS), fmt.Sprintf("✅ Stop condition matched (iteration %d)", i))
 			return 0
@@ -118,7 +119,7 @@ func Run(cfg *config.Config) int {
 	}
 
 	select {
-	case <-sigCh:
+	case <-ctx.Done():
 		fmt.Println()
 		printRunSummary(statuses, time.Since(startTS), "⚠️  Interrupted (SIGINT)")
 		fmt.Fprintf(os.Stderr, "Last output in %s\n", cfg.LastOutputFile)
@@ -132,14 +133,15 @@ func Run(cfg *config.Config) int {
 }
 
 // runIteration executes the agent command once and returns (exitCode, captured output).
-func runIteration(cfg *config.Config, iteration int, logger *fileLogger) (int, string) {
+func runIteration(ctx context.Context, cfg *config.Config, iteration int, logger *fileLogger) (int, string) {
 	var cmd *exec.Cmd
 	if cfg.Timeout > 0 {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.Timeout)*time.Second)
+		// Per-iteration timeout: derive a child context from the parent (SIGINT) context.
+		iterCtx, cancel := context.WithTimeout(ctx, time.Duration(cfg.Timeout)*time.Second)
 		defer cancel()
-		cmd = exec.CommandContext(ctx, cfg.AgentCmd[0], cfg.AgentCmd[1:]...) //nolint:gosec
+		cmd = exec.CommandContext(iterCtx, cfg.AgentCmd[0], cfg.AgentCmd[1:]...) //nolint:gosec
 	} else {
-		cmd = exec.Command(cfg.AgentCmd[0], cfg.AgentCmd[1:]...) //nolint:gosec
+		cmd = exec.CommandContext(ctx, cfg.AgentCmd[0], cfg.AgentCmd[1:]...) //nolint:gosec
 	}
 
 	// Set working directory explicitly for robustness (e.g. after worktree chdir).

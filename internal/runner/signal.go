@@ -1,20 +1,13 @@
 package runner
 
 import (
-	"os"
+	"context"
 	"os/signal"
 	"syscall"
 )
 
-// trapSIGINT returns a channel that receives when SIGINT is received.
-// The returned stop function should be called to clean up the signal handler.
-func trapSIGINT() (<-chan struct{}, func()) {
-	ch := make(chan struct{}, 1)
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT)
-	go func() {
-		<-sigs
-		ch <- struct{}{}
-	}()
-	return ch, func() { signal.Stop(sigs) }
+// notifyContext returns a context that is cancelled on SIGINT.
+// The stop function restores the original signal handler.
+func notifyContext() (context.Context, func()) {
+	return signal.NotifyContext(context.Background(), syscall.SIGINT)
 }

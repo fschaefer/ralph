@@ -71,7 +71,6 @@ Important options:
 - `--clean-all`: remove the entire `.ralph/` directory
 - `--cleanup`: remove worktrees from previous runs in `.ralph/worktrees/`
 
-`RALPH_DELAY` and `STOP_REGEX` can provide defaults when the matching flags are not set.
 
 ## Worktree isolation
 

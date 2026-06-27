@@ -41,7 +41,6 @@ func New() *Config {
 	return &Config{
 		Iterations: 5,
 		Delay:      2,
-		StopRegex:  `^COMPLETE:[[:space:]]*true$`,
 		RalphDir:   ".ralph",
 	}
 }

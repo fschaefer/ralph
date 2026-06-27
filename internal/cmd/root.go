@@ -32,7 +32,7 @@ Prompt input:
 
 Loop options:
   --max-iterations <n>    Maximum number of iterations
-  --delay <s>             Pause between iterations in seconds (default: 2, or $RALPH_DELAY)
+  --delay <s>             Pause between iterations in seconds (default: 2)
   --timeout <s>           Kill one agent run after <s> seconds (default: disabled)
   --stop-regex <expr>     Stop when agent output matches this regex
   --resume                Resume from .ralph/iteration.txt
@@ -80,9 +80,9 @@ func Execute() {
 
 	// Loop settings
 	fs.IntVar(&cfg.Iterations, "max-iterations", 5, "Maximum number of loop iterations")
-	fs.Float64Var(&cfg.Delay, "delay", 2, "Pause between iterations in seconds (env: RALPH_DELAY)")
+	fs.Float64Var(&cfg.Delay, "delay", 2, "Pause between iterations in seconds")
 	fs.IntVar(&cfg.Timeout, "timeout", 0, "Per-iteration timeout in seconds; kills agent after <s>s (0 = disabled)")
-	fs.StringVar(&cfg.StopRegex, "stop-regex", "", "Regex that triggers a successful stop (env: STOP_REGEX)")
+	fs.StringVar(&cfg.StopRegex, "stop-regex", "", "Regex that triggers a successful stop")
 	fs.BoolVar(&cfg.Quiet, "quiet", false, "Suppress config header and iteration banners")
 	fs.BoolVar(&cfg.Quiet, "q", false, "Suppress config header and iteration banners (shorthand)")
 	fs.BoolVar(&cfg.DryRun, "dry-run", false, "Print configuration and exit without running the agent")
@@ -123,22 +123,9 @@ func Execute() {
 		os.Exit(0)
 	}
 
-	// RALPH_DELAY env sets default; explicit --delay flag overrides it.
-	if !isFlagChanged(fs, "delay") {
-		if d, ok := os.LookupEnv("RALPH_DELAY"); ok {
-			if v, err := strconv.ParseFloat(d, 64); err == nil {
-				cfg.Delay = v
-			}
-		}
-	}
-
-	// Resolve STOP_REGEX from env if not set via flag.
+	// Default StopRegex (env var support was removed — use --stop-regex instead).
 	if cfg.StopRegex == "" {
-		if v, ok := os.LookupEnv("STOP_REGEX"); ok && v != "" {
-			cfg.StopRegex = v
-		} else {
-			cfg.StopRegex = `^COMPLETE:[[:space:]]*true$`
-		}
+		cfg.StopRegex = `^COMPLETE:[[:space:]]*true$`
 	}
 
 	if iterationArg != "" {
