@@ -232,15 +232,25 @@ func validateConfig(cfg *config.Config) error {
 }
 
 func extractIterationArg(args []string) (flagArgs []string, iterationArg string, err error) {
-	valueFlags := map[string]bool{
-		"max-iterations": true,
-		"delay":          true,
-		"timeout":        true,
-		"stop-regex":     true,
-		"prompt-file":    true,
-		"goal":           true,
-		"stack":          true,
-	}
+	// Build a temporary FlagSet to determine which flags expect values.
+	// We use Lookup to check if a flag name is registered and whether it's a bool flag.
+	fs := flag.NewFlagSet("ralph", flag.ContinueOnError)
+	fs.Bool("version", false, "")
+	fs.Bool("v", false, "")
+	fs.Int("max-iterations", 0, "")
+	fs.Float64("delay", 0, "")
+	fs.Int("timeout", 0, "")
+	fs.String("stop-regex", "", "")
+	fs.Bool("quiet", false, "")
+	fs.Bool("q", false, "")
+	fs.Bool("dry-run", false, "")
+	fs.Bool("resume", false, "")
+	fs.Bool("worktree", false, "")
+	fs.Bool("clean-all", false, "")
+	fs.Bool("cleanup", false, "")
+	fs.String("goal", "", "")
+	fs.String("stack", "", "")
+	fs.String("prompt-file", "", "")
 
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
@@ -249,9 +259,13 @@ func extractIterationArg(args []string) (flagArgs []string, iterationArg string,
 
 			name := strings.TrimLeft(arg, "-")
 			name, _, hasValue := strings.Cut(name, "=")
-			if valueFlags[name] && !hasValue && i+1 < len(args) {
-				i++
-				flagArgs = append(flagArgs, args[i])
+			if !hasValue && i+1 < len(args) {
+				if f := fs.Lookup(name); f != nil {
+					if _, isBool := f.Value.(interface{ IsBoolFlag() bool }); !isBool {
+						i++
+						flagArgs = append(flagArgs, args[i])
+					}
+				}
 			}
 			continue
 		}
