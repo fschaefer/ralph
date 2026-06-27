@@ -38,7 +38,6 @@ Loop options:
   --resume                Resume from .ralph/iteration.txt
   --worktree              Run inside an isolated git worktree
   --cleanup               Remove worktrees from previous runs in .ralph/worktrees/
-  --await-input           Pause and wait for user response in .ralph/user-response.txt when agent requests input
   --dry-run               Print resolved configuration and exit
   --quiet, -q             Suppress config header and iteration banners
   --version, -v           Print version and exit
@@ -88,7 +87,6 @@ func Execute() {
 	fs.BoolVar(&cfg.DryRun, "dry-run", false, "Print configuration and exit without running the agent")
 	fs.BoolVar(&cfg.Resume, "resume", false, "Resume from last saved iteration (.ralph/iteration.txt)")
 	fs.BoolVar(&cfg.Worktree, "worktree", false, "Create an isolated Git worktree for this run (branch: ralph/run-<ts>)")
-	fs.BoolVar(&cfg.AwaitInput, "await-input", false, "Pause and wait for user response in .ralph/user-response.txt when agent requests input")
 	fs.BoolVar(&cfg.Cleanup, "cleanup", false, "Remove all worktrees from previous runs in .ralph/worktrees/")
 
 	// Prompt
@@ -181,7 +179,6 @@ func Execute() {
 	cfg.LogFile = cfg.RalphDir + "/ralph.log"
 	cfg.LastOutputFile = cfg.RalphDir + "/last-output.txt"
 	cfg.IterationFile = cfg.RalphDir + "/iteration.txt"
-	cfg.UserResponseFile = cfg.RalphDir + "/user-response.txt"
 
 	// Resolve prompt file and substitute {PROMPT_FILE} in agent args.
 	if err := prompt.Resolve(cfg); err != nil {

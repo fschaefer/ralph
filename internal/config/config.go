@@ -17,12 +17,6 @@ type Config struct {
 	Stack              string
 	PromptFileOverride string
 
-	// AwaitInput pauses and waits for user response when agent outputs ACTION_REQUIRED
-	AwaitInput bool
-
-	// UserResponseFile path where the user writes their response for --await-input
-	UserResponseFile string
-
 	// Cleanup removes worktrees from previous runs
 	Cleanup bool
 

@@ -86,14 +86,6 @@ func Run(cfg *config.Config) int {
 
 		exitCode, output := runIteration(cfg, i, logger)
 
-		// --await-input: If the agent requests user input, pause and wait.
-		if cfg.AwaitInput {
-			if handled := handleAwaitInput(cfg, output, logger); handled {
-				// The user responded; continue to next iteration
-				continue
-			}
-		}
-
 		// Git diff stat
 		if diffStat := gitDiffStat(); diffStat != "" {
 			fmt.Println()
@@ -342,51 +334,6 @@ func yesNo(b bool) string {
 		return "yes"
 	}
 	return "no"
-}
-
-// handleAwaitInput checks if the agent output contains ACTION_REQUIRED.
-// If so, it prints the question, polls for user-response.txt, reads it,
-// and returns true. Returns false if no ACTION_REQUIRED was found.
-func handleAwaitInput(cfg *config.Config, output string, logger *fileLogger) bool {
-	const prefix = "ACTION_REQUIRED:"
-	idx := strings.Index(output, prefix)
-	if idx < 0 {
-		return false
-	}
-
-	// Extract the question (everything after ACTION_REQUIRED: on that line)
-	rest := output[idx+len(prefix):]
-	if nl := strings.Index(rest, "\n"); nl >= 0 {
-		rest = rest[:nl]
-	}
-	question := strings.TrimSpace(rest)
-
-	fmt.Println()
-	fmt.Println(sep)
-	fmt.Println("💬 Agent requests your input")
-	if question != "" {
-		fmt.Println("   Question:", question)
-	}
-	fmt.Printf("   Write your response into %s and save, then I will continue.\n", cfg.UserResponseFile)
-	fmt.Println(sep)
-
-	// Poll for the response file
-	pollInterval := 2 * time.Second
-	for {
-		data, err := os.ReadFile(cfg.UserResponseFile)
-		if err == nil {
-			// File exists — read the response, remove it, and return
-			response := strings.TrimSpace(string(data))
-			if response != "" {
-				logger.info(fmt.Sprintf("User responded: %s", response))
-			}
-			// Remove file so it doesn't get reused
-			os.Remove(cfg.UserResponseFile)
-			fmt.Println("✅ Response received, continuing...")
-			return true
-		}
-		time.Sleep(pollInterval)
-	}
 }
 
 // stripTerminalCodes removes ANSI/VT100 escape sequences and collapses
