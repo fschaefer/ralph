@@ -141,6 +141,11 @@ func runIteration(cfg *config.Config, iteration int, logger *fileLogger) (int, s
 		cmd = exec.Command(cfg.AgentCmd[0], cfg.AgentCmd[1:]...) //nolint:gosec
 	}
 
+	// Set working directory explicitly for robustness (e.g. after worktree chdir).
+	if wd, err := os.Getwd(); err == nil {
+		cmd.Dir = wd
+	}
+
 	// Open last-output.txt for writing
 	lof, err := os.Create(cfg.LastOutputFile)
 	if err != nil {
