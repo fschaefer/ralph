@@ -82,7 +82,7 @@ func Run(cfg *config.Config) int {
 			logger.warn("could not refresh prompt: " + err.Error())
 		}
 
-		exitCode, output := runIteration(cfg, i, logger, stopRE)
+		exitCode, output := runIteration(cfg, i, logger)
 
 		// Git diff stat
 		if diffStat := gitDiffStat(); diffStat != "" {
@@ -130,7 +130,7 @@ func Run(cfg *config.Config) int {
 }
 
 // runIteration executes the agent command once and returns (exitCode, captured output).
-func runIteration(cfg *config.Config, iteration int, logger *fileLogger, _ *regexp.Regexp) (int, string) {
+func runIteration(cfg *config.Config, iteration int, logger *fileLogger) (int, string) {
 	var cmd *exec.Cmd
 	if cfg.Timeout > 0 {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.Timeout)*time.Second)
