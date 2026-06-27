@@ -78,10 +78,6 @@ func Execute() {
 	fs.BoolVar(&showVersion, "version", false, "Print version and exit")
 	fs.BoolVar(&showVersion, "v", false, "Print version and exit (shorthand)")
 
-	// --hello / -H
-	fs.BoolVar(&cfg.Hello, "hello", false, "Print Hello, World! and exit")
-	fs.BoolVar(&cfg.Hello, "H", false, "Print Hello, World! and exit (shorthand)")
-
 	// Loop settings
 	fs.IntVar(&cfg.Iterations, "max-iterations", 5, "Maximum number of loop iterations")
 	fs.Float64Var(&cfg.Delay, "delay", 2, "Pause between iterations in seconds (env: RALPH_DELAY)")
@@ -124,11 +120,6 @@ func Execute() {
 
 	if showVersion {
 		fmt.Printf("ralph %s\n", version)
-		os.Exit(0)
-	}
-
-	if cfg.Hello {
-		fmt.Println("Hello, World!")
 		os.Exit(0)
 	}
 

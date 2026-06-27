@@ -26,9 +26,6 @@ type Config struct {
 	// Cleanup removes worktrees from previous runs
 	Cleanup bool
 
-	// Hello prints "Hello, World!" and exits
-	Hello bool
-
 	// Agent command (after --)
 	AgentCmd []string
 
