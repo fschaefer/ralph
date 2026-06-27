@@ -166,16 +166,14 @@ func Execute() {
 		os.Exit(2)
 	}
 
-	// Verify that required external programs are available.
-	if err := checkDependencies(cfg); err != nil {
-		fmt.Fprintln(os.Stderr, "Error:", err)
-		os.Exit(2)
+	// --cleanup: remove worktrees from previous runs.
+	if cfg.Cleanup {
+		if err := runner.CleanupWorktrees(cfg); err != nil {
+			fmt.Fprintln(os.Stderr, "Error:", err)
+			os.Exit(1)
+		}
+		return
 	}
-
-	// Set up derived paths.
-	cfg.LogFile = cfg.RalphDir + "/ralph.log"
-	cfg.LastOutputFile = cfg.RalphDir + "/last-output.txt"
-	cfg.IterationFile = cfg.RalphDir + "/iteration.txt"
 
 	// Resolve prompt file and substitute {PROMPT_FILE} in agent args.
 	if err := prompt.Resolve(cfg); err != nil {
@@ -197,13 +195,10 @@ func Execute() {
 		}
 	}
 
-	// --cleanup: remove worktrees from previous runs.
-	if cfg.Cleanup {
-		if err := runner.CleanupWorktrees(cfg); err != nil {
-			fmt.Fprintln(os.Stderr, "Error:", err)
-			os.Exit(1)
-		}
-		return
+	// Verify that required external programs are available.
+	if err := checkDependencies(cfg); err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		os.Exit(2)
 	}
 
 	// Run the main loop; exit with the returned code.
