@@ -57,7 +57,8 @@ func Run(cfg *config.Config) int {
 	startTS := time.Now()
 	var statuses []iterStatus
 
-	sigCh := trapSIGINT()
+	sigCh, stopSig := trapSIGINT()
+	defer stopSig()
 
 	for i := startIteration; i <= cfg.Iterations; i++ {
 		select {

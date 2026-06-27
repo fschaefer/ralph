@@ -7,7 +7,8 @@ import (
 )
 
 // trapSIGINT returns a channel that receives when SIGINT is received.
-func trapSIGINT() <-chan struct{} {
+// The returned stop function should be called to clean up the signal handler.
+func trapSIGINT() (<-chan struct{}, func()) {
 	ch := make(chan struct{}, 1)
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT)
@@ -15,5 +16,5 @@ func trapSIGINT() <-chan struct{} {
 		<-sigs
 		ch <- struct{}{}
 	}()
-	return ch
+	return ch, func() { signal.Stop(sigs) }
 }
