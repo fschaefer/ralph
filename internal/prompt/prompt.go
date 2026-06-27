@@ -183,9 +183,11 @@ func generatePromptFile(cfg *config.Config) (string, error) {
 }
 
 // captureCmd runs a command and returns its combined output, or an empty string on error.
+// Errors are logged to stderr so that silent failures in prompt generation are visible.
 func captureCmd(name string, args ...string) string {
 	out, err := exec.Command(name, args...).Output()
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: %s failed: %v\n", name, err)
 		return ""
 	}
 	return strings.TrimRight(string(out), "\n")
