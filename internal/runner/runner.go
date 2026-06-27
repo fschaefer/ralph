@@ -111,7 +111,7 @@ func Run(cfg *config.Config) int {
 		}
 
 		if i < cfg.Iterations {
-			time.Sleep(time.Duration(cfg.Delay*1000) * time.Millisecond)
+			time.Sleep(time.Duration(cfg.Delay * float64(time.Second)))
 		}
 	}
 
