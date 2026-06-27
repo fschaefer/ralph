@@ -164,6 +164,10 @@ func Resolve(cfg *config.Config) error {
 func generatePromptFile(cfg *config.Config) (string, error) {
 	outPath := filepath.Join(cfg.RalphDir, "PROMPT.md")
 
+	if err := os.MkdirAll(cfg.RalphDir, 0o755); err != nil {
+		return "", fmt.Errorf("creating ralph dir: %w", err)
+	}
+
 	tmpl := embeddedTemplate
 	// External PROMPT_TEMPLATE.md in the working directory takes priority
 	if data, err := os.ReadFile("PROMPT_TEMPLATE.md"); err == nil {
