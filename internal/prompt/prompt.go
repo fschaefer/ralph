@@ -174,7 +174,7 @@ func generatePromptFile(cfg *config.Config) (string, error) {
 
 	content := strings.ReplaceAll(tmpl, "{{GOAL}}", cfg.Goal)
 	content = strings.ReplaceAll(content, "{{STACK}}", cfg.Stack)
-	content = strings.ReplaceAll(content, "{{DIRECTORY_STRUCTURE}}", captureCmd("find", ".", "-maxdepth", "3", "-not", "-path", "./.git/*"))
+	content = strings.ReplaceAll(content, "{{DIRECTORY_STRUCTURE}}", captureCmd("find", ".", "-maxdepth", "3", "-not", "-path", "./.git/*", "-not", "-path", "./.cache/*"))
 	content = strings.ReplaceAll(content, "{{GIT_STATUS}}", captureCmd("git", "status", "--short"))
 	content = strings.ReplaceAll(content, "{{GIT_LOG}}", captureCmd("git", "log", "--oneline", "-n", "5"))
 

@@ -55,7 +55,11 @@ func SetupWorktree(cfg *config.Config) error {
 				fmt.Fprintf(os.Stderr, "Warning: cannot write prompt file to worktree: %v\n", err)
 			} else {
 				for i, arg := range cfg.AgentCmd {
-					cfg.AgentCmd[i] = strings.ReplaceAll(arg, cfg.EffectivePromptFile, dest)
+					if arg == cfg.EffectivePromptFile {
+						cfg.AgentCmd[i] = dest
+					} else if arg == "@"+cfg.EffectivePromptFile {
+						cfg.AgentCmd[i] = "@" + dest
+					}
 				}
 				cfg.EffectivePromptFile = dest
 			}
