@@ -2,16 +2,16 @@
 package runner
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/fschaefer/ralph/internal/config"
@@ -41,15 +41,16 @@ func Run(cfg *config.Config) int {
 		return 1
 	}
 
-	startIteration := 1
-	if cfg.Resume {
-		if saved, err := readIterationFile(cfg.IterationFile); err == nil {
-			if saved >= 1 && saved <= cfg.Iterations {
-				startIteration = saved
-				fmt.Printf("▶️  Resume: starting at iteration %d\n", saved)
-			}
-		}
+	backend, err := NewBackend(cfg)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		return 2
 	}
+	if err := backend.Setup(cfg); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: backend setup: %v\n", err)
+		return 1
+	}
+	defer backend.Cleanup()
 
 	if !cfg.Quiet {
 		printConfigHeader(cfg)
@@ -58,14 +59,14 @@ func Run(cfg *config.Config) int {
 	startTS := time.Now()
 	var statuses []iterStatus
 
-	ctx, stopSig := notifyContext()
+	ctx, stopSig := signal.NotifyContext(context.Background(), syscall.SIGINT)
 	defer stopSig()
 
-	for i := startIteration; i <= cfg.Iterations; i++ {
+	for i := 1; i <= cfg.Iterations; i++ {
 		select {
 		case <-ctx.Done():
 			fmt.Println()
-			printRunSummary(statuses, time.Since(startTS), "⚠️  Interrupted (SIGINT)")
+			printRunSummary(statuses, time.Since(startTS), "Interrupted (SIGINT)")
 			fmt.Fprintf(os.Stderr, "Last output in %s\n", cfg.LastOutputFile)
 			return 130
 		default:
@@ -84,12 +85,16 @@ func Run(cfg *config.Config) int {
 			logger.warn("could not refresh prompt: " + err.Error())
 		}
 
-		exitCode, output := runIteration(ctx, cfg, i, logger)
+		exitCode, output := backend.RunIteration(ctx, cfg, i)
+
+		// Append to ralph.log
+		logger.info(fmt.Sprintf("Iteration %d exit=%d", i, exitCode))
+		logger.write(stripTerminalCodes(output))
 
 		// Git diff stat
 		if diffStat := gitDiffStat(); diffStat != "" {
 			fmt.Println()
-			fmt.Println("📊 Changes since last commit (git diff --stat HEAD):")
+			fmt.Println("Changes since last commit (git diff --stat HEAD):")
 			fmt.Println(diffStat)
 		}
 
@@ -97,19 +102,19 @@ func Run(cfg *config.Config) int {
 		var note string
 		switch {
 		case stopped:
-			note = "✓ stop"
+			note = "stop"
 		case cfg.Timeout > 0 && exitCode == 124:
-			note = "⏱ timeout"
+			note = "timeout"
 		case exitCode != 0:
-			note = "✗ error"
+			note = "error"
 		default:
-			note = "→ continue"
+			note = "continue"
 		}
 		statuses = append(statuses, iterStatus{iter: i, code: exitCode, note: note})
 
 		if stopped {
-			fmt.Printf("✅ Stop condition matched in iteration %d\n", i)
-			printRunSummary(statuses, time.Since(startTS), fmt.Sprintf("✅ Stop condition matched (iteration %d)", i))
+			fmt.Printf("Stop condition matched in iteration %d\n", i)
+			printRunSummary(statuses, time.Since(startTS), fmt.Sprintf("Stop condition matched (iteration %d)", i))
 			return 0
 		}
 
@@ -121,93 +126,15 @@ func Run(cfg *config.Config) int {
 	select {
 	case <-ctx.Done():
 		fmt.Println()
-		printRunSummary(statuses, time.Since(startTS), "⚠️  Interrupted (SIGINT)")
+		printRunSummary(statuses, time.Since(startTS), "Interrupted (SIGINT)")
 		fmt.Fprintf(os.Stderr, "Last output in %s\n", cfg.LastOutputFile)
 		return 130
 	default:
 	}
 
-	fmt.Println("⚠️  Max iterations reached.")
-	printRunSummary(statuses, time.Since(startTS), fmt.Sprintf("⚠️  Max iterations (%d) reached", cfg.Iterations))
+	fmt.Println("Max iterations reached.")
+	printRunSummary(statuses, time.Since(startTS), fmt.Sprintf("Max iterations (%d) reached", cfg.Iterations))
 	return 2
-}
-
-// runIteration executes the agent command once and returns (exitCode, captured output).
-func runIteration(ctx context.Context, cfg *config.Config, iteration int, logger *fileLogger) (int, string) {
-	var cmd *exec.Cmd
-	if cfg.Timeout > 0 {
-		// Per-iteration timeout: derive a child context from the parent (SIGINT) context.
-		iterCtx, cancel := context.WithTimeout(ctx, time.Duration(cfg.Timeout)*time.Second)
-		defer cancel()
-		cmd = exec.CommandContext(iterCtx, cfg.AgentCmd[0], cfg.AgentCmd[1:]...) //nolint:gosec
-	} else {
-		cmd = exec.CommandContext(ctx, cfg.AgentCmd[0], cfg.AgentCmd[1:]...) //nolint:gosec
-	}
-
-	// Set working directory explicitly for robustness (e.g. after worktree chdir).
-	if wd, err := os.Getwd(); err == nil {
-		cmd.Dir = wd
-	}
-
-	// Open last-output.txt for writing
-	lof, err := os.Create(cfg.LastOutputFile)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: cannot open last-output.txt: %v\n", err)
-	}
-	if lof != nil {
-		defer lof.Close()
-	}
-
-	// Tee: stdout+stderr → terminal and last-output.txt simultaneously
-	pr, pw := io.Pipe()
-	cmd.Stdout = pw
-	cmd.Stderr = pw
-
-	var buf strings.Builder
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		scanner := bufio.NewScanner(pr)
-		for scanner.Scan() {
-			line := scanner.Text()
-			fmt.Println(line)
-			buf.WriteString(line + "\n")
-			if lof != nil {
-				fmt.Fprintln(lof, line)
-			}
-		}
-	}()
-
-	if err := cmd.Start(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: cannot start agent: %v\n", err)
-		pw.Close()
-		<-done
-		return 1, ""
-	}
-
-	runErr := cmd.Wait()
-	pw.Close()
-	<-done
-
-	exitCode := 0
-	if runErr != nil {
-		if exitErr, ok := runErr.(*exec.ExitError); ok {
-			exitCode = exitErr.ExitCode()
-			if exitCode == -1 {
-				exitCode = 124 // treat killed (timeout) as 124 to match bash behaviour
-			}
-		} else {
-			exitCode = 1
-		}
-	}
-
-	output := buf.String()
-
-	// Append to ralph.log (plain text — strip ANSI codes and CR overwrite sequences)
-	logger.info(fmt.Sprintf("Iteration %d exit=%d", iteration, exitCode))
-	logger.write(stripTerminalCodes(output))
-
-	return exitCode, output
 }
 
 // ── Simple file logger ────────────────────────────────────────────────────────
@@ -254,14 +181,6 @@ func (l *fileLogger) close() {
 	}
 }
 
-func readIterationFile(path string) (int, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return 0, err
-	}
-	return strconv.Atoi(strings.TrimSpace(string(data)))
-}
-
 func writeIterationFile(path string, i int) error {
 	return os.WriteFile(path, []byte(strconv.Itoa(i)), 0o644)
 }
@@ -276,28 +195,34 @@ func gitDiffStat() string {
 
 // ── Output helpers ────────────────────────────────────────────────────────────
 
+func configRow(w int, k, v string) {
+	fmt.Printf("  %-*s %s\n", w, k, v)
+}
+
 func printConfigHeader(cfg *config.Config) {
 	fmt.Println("--- Ralph Configuration ---")
-	row := func(k, v string) {
-		fmt.Printf("  %-18s %s\n", k, v)
-	}
-	row("Iterations:", strconv.Itoa(cfg.Iterations))
-	row("Delay:", fmt.Sprintf("%gs", cfg.Delay))
+	configRow(18, "Iterations:", strconv.Itoa(cfg.Iterations))
+	configRow(18, "Delay:", fmt.Sprintf("%gs", cfg.Delay))
 	if cfg.Timeout > 0 {
-		row("Timeout:", fmt.Sprintf("%ds", cfg.Timeout))
+		configRow(18, "Timeout:", fmt.Sprintf("%ds", cfg.Timeout))
 	} else {
-		row("Timeout:", "disabled")
+		configRow(18, "Timeout:", "disabled")
 	}
-	row("Stop regex:", cfg.StopRegex)
-	row("Resume:", yesNo(cfg.Resume))
+	configRow(18, "Stop regex:", cfg.StopRegex)
 	if cfg.Worktree && cfg.WorktreePath != "" {
-		row("Worktree:", cfg.WorktreePath)
+		configRow(18, "Worktree:", cfg.WorktreePath)
 	} else {
-		row("Worktree:", yesNo(cfg.Worktree))
+		configRow(18, "Worktree:", yesNo(cfg.Worktree))
 	}
-	row("Log file:", cfg.LogFile)
-	if src := prompt.PromptSource(cfg); src != "" {
-		row("Prompt file:", src)
+	configRow(18, "Log file:", cfg.LogFile)
+	if cfg.CopilotSDK {
+		configRow(18, "Backend:", "Copilot SDK")
+		configRow(18, "Model:", cfg.Model)
+	} else {
+		configRow(18, "Backend:", "exec")
+	}
+	if cfg.PromptSourceNote != "" {
+		configRow(18, "Prompt file:", cfg.PromptSourceNote)
 	}
 	fmt.Printf("  Command:           ")
 	fmt.Println(strings.Join(cfg.AgentCmd, " "))
@@ -315,7 +240,7 @@ func printRunSummary(statuses []iterStatus, elapsed time.Duration, outcome strin
 	secs := int(elapsed.Seconds()) % 60
 	fmt.Println()
 	fmt.Println(sep)
-	fmt.Println("📋 Run Summary")
+	fmt.Println("Run Summary")
 	fmt.Println(sep)
 	fmt.Printf("  %-20s %dm %02ds\n", "Total time:", mins, secs)
 	if len(statuses) > 0 {

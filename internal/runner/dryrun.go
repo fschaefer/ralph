@@ -5,27 +5,26 @@ import (
 	"strings"
 
 	"github.com/fschaefer/ralph/internal/config"
-	"github.com/fschaefer/ralph/internal/prompt"
 )
 
 // DryRun prints the effective configuration and exits without running the agent.
 func DryRun(cfg *config.Config) {
-	fmt.Println("🔍 Dry-run – configuration (no command will be executed):")
-	row := func(k, v string) {
-		fmt.Printf("  %-14s %s\n", k, v)
-	}
-	row("Iterations:", fmt.Sprintf("%d", cfg.Iterations))
-	row("Delay:", fmt.Sprintf("%gs", cfg.Delay))
+	fmt.Println("Dry-run – configuration (no command will be executed):")
+	configRow(14, "Iterations:", fmt.Sprintf("%d", cfg.Iterations))
+	configRow(14, "Delay:", fmt.Sprintf("%gs", cfg.Delay))
 	if cfg.Timeout > 0 {
-		row("Timeout:", fmt.Sprintf("%ds", cfg.Timeout))
+		configRow(14, "Timeout:", fmt.Sprintf("%ds", cfg.Timeout))
 	} else {
-		row("Timeout:", "disabled")
+		configRow(14, "Timeout:", "disabled")
 	}
-	row("Stop regex:", cfg.StopRegex)
-	row("Resume:", yesNo(cfg.Resume))
-	row("Worktree:", yesNo(cfg.Worktree))
-	if src := prompt.PromptSource(cfg); src != "" {
-		row("Prompt file:", src)
+	configRow(14, "Stop regex:", cfg.StopRegex)
+	configRow(14, "Worktree:", yesNo(cfg.Worktree))
+	if cfg.PromptSourceNote != "" {
+		configRow(14, "Prompt file:", cfg.PromptSourceNote)
 	}
-	fmt.Printf("  %-14s %s\n", "Command:", strings.Join(cfg.AgentCmd, " "))
+	if cfg.CopilotSDK {
+		configRow(14, "Backend:", fmt.Sprintf("Copilot SDK (model: %s)", cfg.Model))
+	} else {
+		fmt.Printf("  %-14s %s\n", "Command:", strings.Join(cfg.AgentCmd, " "))
+	}
 }

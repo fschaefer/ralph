@@ -24,8 +24,8 @@ func checkDependencies(cfg *config.Config) error {
 		}
 	}
 
-	// The agent command itself must be resolvable.
-	if len(cfg.AgentCmd) > 0 {
+	// The agent command itself must be resolvable (skip when using Copilot SDK).
+	if !cfg.CopilotSDK && len(cfg.AgentCmd) > 0 {
 		if _, err := exec.LookPath(cfg.AgentCmd[0]); err != nil {
 			return fmt.Errorf("agent executable %q not found in PATH", cfg.AgentCmd[0])
 		}

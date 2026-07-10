@@ -7,7 +7,6 @@ type Config struct {
 	Delay      float64
 	Timeout    int
 	StopRegex  string
-	Resume     bool
 	Quiet      bool
 	DryRun     bool
 	Worktree   bool
@@ -17,11 +16,17 @@ type Config struct {
 	Stack              string
 	PromptFileOverride string
 
-	// Cleanup removes worktrees from previous runs
-	Cleanup bool
+	// Clean removes worktrees from previous runs
+	Clean bool
 
 	// CleanAll removes the entire .ralph directory
 	CleanAll bool
+
+	// CopilotSDK uses the Copilot Go SDK instead of shelling out to a CLI agent.
+	CopilotSDK bool
+
+	// Model selects the model for the Copilot SDK (default: "auto").
+	Model string
 
 	// Agent command (after --)
 	AgentCmd []string

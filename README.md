@@ -65,11 +65,10 @@ Important options:
 - `--delay <s>`: pause between iterations
 - `--timeout <s>`: limit one agent run
 - `--stop-regex <expr>`: custom completion pattern
-- `--resume`: continue from the last saved iteration
 - `--dry-run`: print resolved config without running
 - `--quiet`: reduce wrapper output
 - `--clean-all`: remove the entire `.ralph/` directory
-- `--cleanup`: remove worktrees from previous runs in `.ralph/worktrees/`
+- `--clean`: remove worktrees from previous runs in `.ralph/worktrees/`
 
 
 ## Worktree isolation
@@ -94,18 +93,18 @@ modify your current checkout directly.
 - `.ralph/last-output.txt`
 - `.ralph/ralph.log`
 
-These files allow resume support and make the last run inspectable.
+These files make the last run inspectable.
 
 ## Cleanup
 
 ```bash
 ralph --clean-all            # Remove entire .ralph/ directory
-ralph --cleanup              # Remove worktrees from previous runs only
+ralph --clean               # Remove worktrees from previous runs only
 ```
 
 `--clean-all` removes the whole `.ralph/` runtime directory (logs, prompts,
 worktrees, iteration state). This is useful to fully reset before a new run.
-`--cleanup` only removes stale git worktrees from previous `--worktree` runs.
+`--clean` only removes stale git worktrees from previous `--worktree` runs.
 Both flags work without an agent command.
 
 ## Examples

@@ -197,7 +197,3 @@ func captureCmd(name string, args ...string) string {
 	return strings.TrimRight(string(out), "\n")
 }
 
-// PromptSource returns a human-readable description of where the prompt came from.
-func PromptSource(cfg *config.Config) string {
-	return cfg.PromptSourceNote
-}

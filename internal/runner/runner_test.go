@@ -3,8 +3,18 @@ package runner
 import (
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 )
+
+func readIterationFile(path string) (int, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return 0, err
+	}
+	return strconv.Atoi(strings.TrimSpace(string(data)))
+}
 
 func TestStripTerminalCodes(t *testing.T) {
 	tests := []struct {

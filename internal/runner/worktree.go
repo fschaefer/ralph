@@ -36,7 +36,7 @@ func SetupWorktree(cfg *config.Config) error {
 	if err != nil {
 		return fmt.Errorf("git worktree add: %w\n%s", err, out)
 	}
-	fmt.Printf("🌿 Worktree created: %s (branch: %s)\n", wtPath, branch)
+	fmt.Printf("Worktree created: %s (branch: %s)\n", wtPath, branch)
 
 	cfg.WorktreePath = wtPath
 	wtRalphDir := filepath.Join(wtPath, ".ralph")
@@ -80,8 +80,8 @@ func SetupWorktree(cfg *config.Config) error {
 	return nil
 }
 
-// CleanupWorktrees removes all worktrees from previous runs in .ralph/worktrees/.
-func CleanupWorktrees(cfg *config.Config) error {
+// CleanWorktrees removes all worktrees from previous runs in .ralph/worktrees/.
+func CleanWorktrees(cfg *config.Config) error {
 	rootBytes, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
 	if err != nil {
 		return fmt.Errorf("getting git root: %w", err)
@@ -111,7 +111,7 @@ func CleanupWorktrees(cfg *config.Config) error {
 			continue
 		}
 		cleaned++
-		fmt.Printf("🧹 Removed worktree: %s\n", wtPath)
+		fmt.Printf("Removed worktree: %s\n", wtPath)
 	}
 
 	if cleaned == 0 {

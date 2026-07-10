@@ -12,6 +12,6 @@ func CleanAll(cfg *config.Config) error {
 	if err := os.RemoveAll(cfg.RalphDir); err != nil {
 		return fmt.Errorf("removing %s: %w", cfg.RalphDir, err)
 	}
-	fmt.Printf("🧹 Removed %s/\n", cfg.RalphDir)
+	fmt.Printf("Removed %s/\n", cfg.RalphDir)
 	return nil
 }
