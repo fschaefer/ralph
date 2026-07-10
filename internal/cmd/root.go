@@ -50,6 +50,9 @@ Prompt options:
   --goal <text>           Project goal for auto-generated prompt
   --stack <text>          Tech stack for auto-generated prompt
 
+Agent behaviour:
+  --ponytail              Lazy-minimalist coding rules: stdlib first, YAGNI, no abstractions
+
 SDK options:
   --copilot-sdk           Use Copilot Go SDK (no -- or agent command needed)
   --model <name>          Model for Copilot SDK (default: auto)
@@ -99,6 +102,9 @@ func Execute() {
 	fs.StringVar(&cfg.Goal, "goal", "", "Project goal (fills {{GOAL}} in prompt template → .ralph/PROMPT.md)")
 	fs.StringVar(&cfg.Stack, "stack", "", "Tech stack (fills {{STACK}} in prompt template → .ralph/PROMPT.md)")
 	fs.StringVar(&cfg.PromptFileOverride, "prompt-file", "", "Use a ready-made prompt file directly (overrides --goal/--stack)")
+
+	// Agent behaviour
+	fs.BoolVar(&cfg.Ponytail, "ponytail", false, "Enable lazy-minimalist coding rules in the agent prompt")
 
 	// SDK backend
 	fs.BoolVar(&cfg.CopilotSDK, "copilot-sdk", false, "Use the Copilot Go SDK instead of a shell agent command")
@@ -256,6 +262,7 @@ func extractIterationArg(args []string) (flagArgs []string, iterationArg string,
 	fs.String("goal", "", "")
 	fs.String("stack", "", "")
 	fs.String("prompt-file", "", "")
+	fs.Bool("ponytail", false, "")
 	fs.Bool("copilot-sdk", false, "")
 	fs.String("model", "", "")
 

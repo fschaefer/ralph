@@ -22,6 +22,9 @@ type Config struct {
 	// CleanAll removes the entire .ralph directory
 	CleanAll bool
 
+	// Ponytail enables lazy-minimalist coding rules in the agent prompt.
+	Ponytail bool
+
 	// CopilotSDK uses the Copilot Go SDK instead of shelling out to a CLI agent.
 	CopilotSDK bool
 

@@ -30,6 +30,7 @@ TECH STACK & ARCHITECTURE: {{STACK}}
 - NO ECHOING: Never repeat these instructions or headers in your output.
 - GIT SAFETY: Never use destructive commands like ` + "`" + `git reset --hard` + "`" + ` or ` + "`" + `git checkout --` + "`" + `. Commit changes in every turn using ` + "`" + `git commit -m "ralph: <description>"` + "`" + `.
 - MACHINE VERIFICATION: A task is only "done" if external checks (tests, linters) pass with exit code 0.
+{{PONYTAIL_RULES}}
 </operational_rules>
 
 <workflow>
@@ -110,6 +111,19 @@ If you need input from the user (e.g., ambiguous requirement, design decision):
 # Artifacts: (check .ralph/work/)
 </workflow_state>`
 
+// ponytailRules is injected into the prompt template when --ponytail is set.
+// Distilled from https://github.com/DietrichGebert/ponytail — lazy-minimalist coding.
+const ponytailRules = `
+## Ponytail Rules (--ponytail)
+You are a lazy senior developer. The best code is the code never written.
+- YAGNI: Question whether a task needs to exist at all. Skip speculative features.
+- STDLIB FIRST: Use the standard library before writing custom code.
+- NATIVE FIRST: Use platform features before adding dependencies.
+- NO ABSTRACTIONS: No interface with one implementation, no factory for one product, no config for a value that never changes.
+- DELETION OVER ADDITION: Remove code before writing it. Fewest files possible.
+- SHORTEST WORKING DIFF: The smallest change that satisfies the acceptance criteria wins.
+- Mark deliberate shortcuts with a ` + "`" + `ponytail:` + "`" + ` comment: ` + "`" + `// ponytail: <skipped>, add when <condition>` + "`" + `.`
+
 // Refresh regenerates .ralph/PROMPT.md with a fresh snapshot of the workspace
 // (git status, git log, directory structure). It is a no-op when the prompt
 // was provided via --prompt-file, because that file is managed by the user.
@@ -179,6 +193,11 @@ func generatePromptFile(cfg *config.Config) (string, error) {
 	content = strings.ReplaceAll(content, "{{DIRECTORY_STRUCTURE}}", captureCmd("find", ".", "-maxdepth", "3", "-not", "-path", "./.git/*", "-not", "-path", "./.cache/*"))
 	content = strings.ReplaceAll(content, "{{GIT_STATUS}}", captureCmd("git", "status", "--short"))
 	content = strings.ReplaceAll(content, "{{GIT_LOG}}", captureCmd("git", "log", "--oneline", "-n", "5"))
+	if cfg.Ponytail {
+		content = strings.ReplaceAll(content, "{{PONYTAIL_RULES}}", ponytailRules)
+	} else {
+		content = strings.ReplaceAll(content, "{{PONYTAIL_RULES}}", "")
+	}
 
 	if err := os.WriteFile(outPath, []byte(content), 0o644); err != nil {
 		return "", fmt.Errorf("writing prompt file: %w", err)
