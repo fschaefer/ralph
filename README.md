@@ -53,6 +53,29 @@ Rules:
 - `--stack` requires `--goal`
 - `{PROMPT_FILE}` requires one of the prompt modes above
 
+## OpenAI-compatible providers with the Copilot SDK
+
+`--copilot-sdk` supports GitHub Copilot by default. Set
+`COPILOT_PROVIDER_BASE_URL` to use an OpenAI-compatible provider instead;
+GitHub authentication is then not required. Provider credentials are read only
+from the process environment and are never written to `.ralph/`.
+
+```bash
+export COPILOT_PROVIDER_TYPE=openai
+export COPILOT_PROVIDER_BASE_URL=https://provider.example/v1
+export COPILOT_PROVIDER_API_KEY=your-api-key
+export COPILOT_PROVIDER_WIRE_API=completions
+export COPILOT_MODEL=your-model
+
+ralph 8 --timeout 1800 --copilot-sdk
+```
+
+Optional variables are `COPILOT_PROVIDER_MODEL_ID`,
+`COPILOT_PROVIDER_WIRE_MODEL`, `COPILOT_PROVIDER_MAX_PROMPT_TOKENS`,
+`COPILOT_PROVIDER_MAX_OUTPUT_TOKENS`, `COPILOT_PROVIDER_BEARER_TOKEN`, and
+`COPILOT_PROVIDER_TRANSPORT`. With a custom provider, set either
+`COPILOT_MODEL` or `--model`; the explicit CLI flag takes precedence.
+
 ## Loop control
 
 ```bash

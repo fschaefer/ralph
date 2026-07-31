@@ -55,7 +55,7 @@ Agent behaviour:
 
 SDK options:
   --copilot-sdk           Use Copilot Go SDK (no -- or agent command needed)
-  --model <name>          Model for Copilot SDK (default: auto)
+  --model <name>          Model for Copilot SDK or custom provider (default: auto)
 
 Rules:
   --prompt-file cannot be combined with --goal or --stack.
@@ -108,7 +108,7 @@ func Execute() {
 
 	// SDK backend
 	fs.BoolVar(&cfg.CopilotSDK, "copilot-sdk", false, "Use the Copilot Go SDK instead of a shell agent command")
-	fs.StringVar(&cfg.Model, "model", "auto", "Model for Copilot SDK (only used with --copilot-sdk)")
+	fs.StringVar(&cfg.Model, "model", "auto", "Model for Copilot SDK or custom provider (only used with --copilot-sdk)")
 
 	// No arguments: print help to stdout and exit 0.
 	if len(os.Args) == 1 {

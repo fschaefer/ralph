@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,9 +16,10 @@ import (
 
 // sdkBackend communicates with Copilot via the Go SDK.
 type sdkBackend struct {
-	client  *copilot.Client
-	session *copilot.Session
-	model   string
+	client   *copilot.Client
+	session  *copilot.Session
+	model    string
+	provider *copilot.ProviderConfig
 }
 
 func newSdkBackend(cfg *config.Config) *sdkBackend {
@@ -29,6 +31,12 @@ func newSdkBackend(cfg *config.Config) *sdkBackend {
 }
 
 func (b *sdkBackend) Setup(cfg *config.Config) error {
+	provider, model, err := providerFromEnv(cfg.Model, os.Getenv)
+	if err != nil {
+		return err
+	}
+	b.provider = provider
+	b.model = model
 	wd, _ := os.Getwd()
 	b.client = copilot.NewClient(&copilot.ClientOptions{
 		WorkingDirectory: wd,
@@ -39,6 +47,7 @@ func (b *sdkBackend) Setup(cfg *config.Config) error {
 
 	session, err := b.client.CreateSession(context.Background(), &copilot.SessionConfig{
 		Model:               b.model,
+		Provider:            b.provider,
 		OnPermissionRequest: copilot.PermissionHandler.ApproveAll,
 		Streaming:           copilot.Bool(true),
 	})
@@ -48,6 +57,56 @@ func (b *sdkBackend) Setup(cfg *config.Config) error {
 	}
 	b.session = session
 	return nil
+}
+
+func providerFromEnv(model string, getenv func(string) string) (*copilot.ProviderConfig, string, error) {
+	baseURL := getenv("COPILOT_PROVIDER_BASE_URL")
+	if baseURL == "" {
+		return nil, model, nil
+	}
+	if model == "" || model == "auto" {
+		model = getenv("COPILOT_MODEL")
+	}
+	if model == "" || model == "auto" {
+		return nil, "", fmt.Errorf("COPILOT_MODEL or --model is required with COPILOT_PROVIDER_BASE_URL")
+	}
+	provider := &copilot.ProviderConfig{
+		Type:        first(getenv("COPILOT_PROVIDER_TYPE"), "openai"),
+		BaseURL:     baseURL,
+		APIKey:      getenv("COPILOT_PROVIDER_API_KEY"),
+		BearerToken: getenv("COPILOT_PROVIDER_BEARER_TOKEN"),
+		WireAPI:     first(getenv("COPILOT_PROVIDER_WIRE_API"), "completions"),
+		Transport:   getenv("COPILOT_PROVIDER_TRANSPORT"),
+		ModelID:     first(getenv("COPILOT_PROVIDER_MODEL_ID"), model),
+		WireModel:   first(getenv("COPILOT_PROVIDER_WIRE_MODEL"), model),
+	}
+	var err error
+	if provider.MaxPromptTokens, err = positiveEnvInt(getenv, "COPILOT_PROVIDER_MAX_PROMPT_TOKENS"); err != nil {
+		return nil, "", err
+	}
+	if provider.MaxOutputTokens, err = positiveEnvInt(getenv, "COPILOT_PROVIDER_MAX_OUTPUT_TOKENS"); err != nil {
+		return nil, "", err
+	}
+	return provider, model, nil
+}
+
+func first(value, fallback string) string {
+	if value != "" {
+		return value
+	}
+	return fallback
+}
+
+func positiveEnvInt(getenv func(string) string, name string) (int, error) {
+	value := getenv(name)
+	if value == "" {
+		return 0, nil
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil || parsed <= 0 {
+		return 0, fmt.Errorf("%s must be a positive integer", name)
+	}
+	return parsed, nil
 }
 
 func (b *sdkBackend) Cleanup() {
